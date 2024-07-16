@@ -1,39 +1,10 @@
 #include <cstdio>
 #include <cstdlib>
+#include <sys/time.h>
+#include <unistd.h>
 
 #include "../tools/common.cuh"
-
-#define ErrorHandleWithLabel(ret, label) \
-    do { \
-        if(cudaSuccess != ret) { \
-            ErrorBackTrace(ret, __FILE__, __LINE__); \
-            goto label; \
-        }\
-    } while(0)
-
-#define ErrorHandleNoLabel(ret) \
-    do { \
-        if(cudaSuccess != ret) { \
-            ErrorBackTrace(ret, __FILE__, __LINE__); \
-        }\
-    } while(0)
-
-typedef enum ElemType {
-    ElemInvalid = 1,
-    ElemInt = 2,
-    ElemFloat = 3,
-} ElemType;
-
-typedef struct Matrix {
-    int size;
-    void *host_addr;
-    void *cuda_addr;
-    ElemType elem_type;
-    Matrix() {
-        host_addr = nullptr;
-        cuda_addr = nullptr;
-    }
-} Matrix;
+#include "../tools/matrix.cuh"
 
 size_t GetSize(int size, ElemType type) {
     if (type == ElemInt) {
@@ -171,7 +142,7 @@ int main() {
     Matrix m3;
     Matrix m4;
 
-    int global_size = 512;
+    int global_size = 5120000;
     // int local_size = 3200;
     int local_size = 32;
     ElemType type = ElemFloat;

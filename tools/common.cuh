@@ -17,6 +17,13 @@ cudaError_t SetGPU() {
         printf(" cudaSetDevice set device [%d] to run !\n", i_device);
     }
 
+    cudaDeviceProp prop;
+    cudaGetDeviceProperties(&prop, i_device);
+    printf(" device name       \t %s\n", prop.name);
+    printf(" device global mem \t %lu MB\n", prop.totalGlobalMem / 1024 / 1024);
+    printf(" device const  mem \t %lu KB\n", prop.totalConstMem / 1024);
+    printf(" device sms        \t %d \n", prop.multiProcessorCount);
+
     return ret;
 }
 
@@ -26,3 +33,18 @@ void ErrorBackTrace(cudaError_t status_code, const char* file, int line_idx) {
                 status_code, cudaGetErrorName(status_code), cudaGetErrorString(status_code), file, line_idx);
     }
 }
+
+#define ErrorHandleWithLabel(ret, label)                  \
+    do {                                                  \
+        if(cudaSuccess != ret) {                          \
+            ErrorBackTrace(ret, __FILE__, __LINE__);      \
+            goto label;                                   \
+        }                                                 \
+    } while(0)
+
+#define ErrorHandleNoLabel(ret)                           \
+    do {                                                  \
+        if(cudaSuccess != ret) {                          \
+            ErrorBackTrace(ret, __FILE__, __LINE__);      \
+        }                                                 \
+    } while(0)
