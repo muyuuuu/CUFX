@@ -27,6 +27,8 @@ hello_from_gpu<<<1, 1>>>();
 - 看到 `gridIdx, blockIdx, threadIdx` 是在求索引，不同线程的取值会发生变化
 - 看到 `gridDim, blockDim` 是在求 grid 或者 block 的维度，这个是固定的取值，由那三个尖括号传入
 
+这些都是 cuda 的内置变量，我们可以直接使用不会报错。
+
 ```c
 __global__ void func_1d() {
     const int block_id  = blockIdx.x;
