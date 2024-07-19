@@ -34,6 +34,7 @@ void ErrorBackTrace(cudaError_t status_code, const char* file, int line_idx) {
     }
 }
 
+// do while(0) 技巧：https://muyuuuu.github.io/2024/02/03/define-macro/
 #define ErrorHandleWithLabel(ret, label)                  \
     do {                                                  \
         if(cudaSuccess != ret) {                          \

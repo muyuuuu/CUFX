@@ -6,21 +6,12 @@
 #include "../tools/common.cuh"
 #include "../tools/matrix.cuh"
 
-size_t GetSize(int size, ElemType type) {
-    if (type == ElemInt) {
-        return sizeof(int) * size;
-    } else if (type == ElemFloat) {
-        return sizeof(float) * size;
-    }
-    return 0;
-}
-
 template<typename T>
 cudaError_t AllocMem(Matrix& matrix, int size) {
     cudaError_t ret;
-    size_t n_bytes = GetSize(matrix.size, matrix.elem_type);
+    size_t n_bytes = matrix.size * sizeof(T);
     matrix.host_addr = malloc(n_bytes);
-    ret = cudaMalloc((int**)&matrix.cuda_addr, n_bytes);
+    ret = cudaMalloc((T**)&matrix.cuda_addr, n_bytes);
     if ((nullptr == matrix.host_addr) || (nullptr == matrix.cuda_addr) || (ret != cudaSuccess)) {
         printf(" Alloc memory failed \n");
         ErrorHandleNoLabel(ret);
