@@ -14,13 +14,20 @@ hello_from_gpu<<<1, 1>>>();
 
 而那三个尖括号中，第一个参数表示 grid 的大小，第二个参数表示 block 的大小，对于 `hello_from_gpu<<<2, 3>>>()` 我们直接上图：
 
-![](../../imgs/1d_thread_model.png)
+<p align="center">
+  <img src="../../imgs/1d_thread_model.png" alt="Image" />
+</p>
 
 在上图中，水平方向有两个 grid，每个 grid 里面有三个 block。我在下面编了号，那么如何找到编号为 4 的线程，让他执行点别的函数呢？
 
 像计算矩阵索引一样：
 
-由 block 的索引 `blockIdx.x`（取值为1），乘以 block 的宽度 `blockDim.x` （取值为 3），在加上编号为 4 的线程在第二个 grid 中的索引 `threadIdx.x` 即可。
+由 block 的索引 `blockIdx.x`（取值为1），乘以 block 的宽度 `blockDim.x` （取值为 3），在加上编号为 4 的线程在第二个 grid 中的索引 `threadIdx.x` 即可。有一个小规律：
+
+- 看到 `gridIdx, blockIdx, threadIdx` 是在求索引，不同线程的取值会发生变化
+- 看到 `gridDim, blockDim` 是在求 grid 或者 block 的维度，这个是固定的取值，由那三个尖括号传入
+
+这些都是 cuda 的内置变量，我们可以直接使用不会报错。
 
 ```c
 __global__ void func_1d() {
@@ -61,23 +68,31 @@ Not Hello GPU
 
 相比于一维，这里增加了 `y` 轴的维度，我们来计算蓝色线程的索引号。
 
-![](../../imgs/2d_thread_model.png)
+<p align="center">
+  <img src="../../imgs/2d_thread_model.png" alt="Image" />
+</p>
+
+首先计算水平方向有几个 grid，上图中的取值是 2
 
 ```c
-// 首先计算水平方向有几个 grid，上图中的取值是 2
 const int grid_dim_x       = gridDim.x;
+```
 
-// 之后计算这个蓝色线程位于哪个 block，管它叫 [特殊 block] 吧
-// blockIdx.y 和 blockIdx.x 取值均为 1，所以 [特殊 block] 为 3
+之后计算这个蓝色线程位于哪个 block，管它叫 [特殊 block] 吧。blockIdx.y 和 blockIdx.x 取值均为 1，所以 [特殊 block] 为 3
+
+```c
 const int block_id         = blockIdx.y * grid_dim_x + blockIdx.x;
+```
 
-// 之后计算蓝色线程在 [特殊 block] 中的索引，看看蓝色线程在当前 [特殊 block] 中排第几个
-// threadIdx.x 和 threadIdx.y 取值均为1，上图中每个 grid 水平方向有 3 个 block blockDim.x 的取值为 3
-// 所以 thread_local_id 为 4
+之后计算蓝色线程在 [特殊 block] 中的索引，看看蓝色线程在当前 [特殊 block] 中排第几个。threadIdx.x 和 threadIdx.y 取值均为1，上图中每个 grid 水平方向有 3 个 block blockDim.x 的取值为 3。所以 thread_local_id 为 4。
+
+```c
 const int thread_local_id  = threadIdx.x + threadIdx.y * blockDim.x;
+```
 
-// 计算在 [特殊 block] 之前一共有多少个线程，也就是 block_id * blockDim.x * blockDim.y 么多个
-// 在加上 thread_local_id，就是蓝色线程的索引号了，为 22
+计算在 [特殊 block] 之前一共有多少个线程，也就是 block_id * blockDim.x * blockDim.y 么多个。在加上 thread_local_id，就是蓝色线程的索引号了，为 22。
+
+```c
 const int thread_id        = thread_local_id + block_id * blockDim.x * blockDim.y;
 ```
 
