@@ -18,10 +18,17 @@ nvcc main.cu
 ./a.out
 ```
 
-一开始避免接触什么 SM 流多处理器，较多的知识概念只会让人心生劝退。从最简单的 helloword 开始，先把代码跑起来，在一点点学习那些线程块、内存模型。
+后续会过度到 cmake，cmake 的编译方式为：
+
+```bash
+cd build
+cmake ..
+make install
+./bin/main
+```
 
 1. `1helloworld`，安装与运行 hello world 级别的代码
 2. `2threadid`，线程模型中的索引计算
 3. `3matrixadd`，矩阵加法。小用一手模板，宏的黑魔法，以及避免内存泄漏
 4. `4runtime`，运行时。继续使用模板精简代码，运行时信息查询，函数计时等
-
+4. `5memorymodel`，内存模型。全局内存、局部内存、共享内存等介绍，并全部使用 cmake 编译和管理。

@@ -53,9 +53,7 @@ int GetCores(cudaDeviceProp &prop) {
             printf("Unknown device type\n");
         }
         break;
-    default:
-        printf("Unknown device type\n");
-        break;
+    default: printf("Unknown device type\n"); break;
     }
     return cores;
 }
@@ -87,28 +85,30 @@ cudaError_t SetGPU() {
     printf(" device sms           \t %d \n", prop.multiProcessorCount);
     printf(" Cores                \t %d \n", GetCores(prop));
     printf(" Max threads per block:  %d\n", prop.maxThreadsPerBlock);
+    printf(" device register number in block \t %d  KB\n", prop.regsPerBlock / 1024);
+    printf(" device register number in sm    \t %d  KB\n", prop.regsPerMultiprocessor / 1024);
+    printf("Maximum amount of shared memory per block: %g KB\n", prop.sharedMemPerBlock / 1024.0);
+    printf("Maximum amount of shared memory per SM:    %g KB\n", prop.sharedMemPerMultiprocessor / 1024.0);
     return ret;
 }
 
 void ErrorBackTrace(cudaError_t status_code, const char *file, int line_idx) {
     if (status_code != cudaSuccess) {
-        printf("CUDA ERROR: \n \t code = %d\n\t name = %s\n\t desc = %s\n\t file = %s\n\t line = %d\n",
-               status_code, cudaGetErrorName(status_code), cudaGetErrorString(status_code), file, line_idx);
+        printf("CUDA ERROR: \n \t code = %d\n\t name = %s\n\t desc = %s\n\t file = %s\n\t line = %d\n", status_code,
+               cudaGetErrorName(status_code), cudaGetErrorString(status_code), file, line_idx);
     }
 }
 
 // do while(0) 技巧：https://muyuuuu.github.io/2024/02/03/define-macro/
-#define ErrorHandleWithLabel(ret, label)             \
-    do {                                             \
-        if (cudaSuccess != ret) {                    \
-            ErrorBackTrace(ret, __FILE__, __LINE__); \
-            goto label;                              \
-        }                                            \
+#define ErrorHandleWithLabel(ret, label)                                                                               \
+    do {                                                                                                               \
+        if (cudaSuccess != ret) {                                                                                      \
+            ErrorBackTrace(ret, __FILE__, __LINE__);                                                                   \
+            goto label;                                                                                                \
+        }                                                                                                              \
     } while (0)
 
-#define ErrorHandleNoLabel(ret)                      \
-    do {                                             \
-        if (cudaSuccess != ret) {                    \
-            ErrorBackTrace(ret, __FILE__, __LINE__); \
-        }                                            \
+#define ErrorHandleNoLabel(ret)                                                                                        \
+    do {                                                                                                               \
+        if (cudaSuccess != ret) { ErrorBackTrace(ret, __FILE__, __LINE__); }                                           \
     } while (0)

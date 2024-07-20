@@ -104,7 +104,7 @@ int main() {
     TMatrix<int> m4;
 
     int global_size = 5120000;
-    int local_size = 1024;
+    int local_size = 32;
 
     dim3 grid_size_1d((global_size + local_size - 1) / local_size);
     dim3 block_size_1d(local_size);
