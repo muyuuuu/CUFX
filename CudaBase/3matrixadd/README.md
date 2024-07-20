@@ -41,9 +41,64 @@ typedef struct Matrix {
 #include "../tools/matrix.cuh"
 ```
 
-## 运行时 GPU 信息查询
+## cuda 矩阵加法
 
+因为要做好 cuda 矩阵加法，需要做很多的准备工作，如运行信息查询、矩阵设置、避免内存泄漏、异常日志准备等等等等。为了防止看不下去，直接把 Kernel 函数放在前面，后面的不想看也可以，但我推荐看一看。
 
+首先通过 global_size 设置矩阵的大小为 5120000，并将 block 设置的大小设置为 32，这样每个线程快就有 32 个线程。那么此时，我们就需要设置 5120000 / 32 = 160000 个 grid。这里我们使用 1 维 grid 和 1 维 block。
+
+```c
+int global_size = 5120000;
+int local_size = 32;
+ElemType type = ElemFloat;
+
+dim3 grid_size_1d(global_size / local_size);
+dim3 block_size_1d(local_size);
+```
+
+为了处理矩阵不同的数据类型，如 int 或者 float 等，我们使用了模板：
+
+```c
+template<typename T>
+__global__ void MatrixGPUAdd(void* m1, void* m2, void* m3, const int size) {
+    const int block_id = blockIdx.x;
+    const int tid = threadIdx.x;
+    const int idx = tid + block_id * blockDim.x;
+    if (idx >= size) {
+        return;
+    }
+
+    T* src1 = (T*)(m1);
+    T* src2 = (T*)(m2);
+    T* dst = (T*)(m3);
+    
+    dst[idx] = src1[idx] + src2[idx];
+}
+```
+
+因为矩阵加法肯定要传入矩阵的地址，由于将地址声明为空指针，所以还要在这里强制转换为 T 类型的指针进行读取和存储。通过在第二部分计算线程索引的方式得到每一个线程的 id，也就是对应到矩阵中的每个元素的索引，对应位置完成矩阵加法即可。
+
+不过需要加一个判断：当索引超出矩阵大小时会面临内存越界的情况，因为下面这种情况肯定是报错的：
+
+```c
+int arr[10];
+arr[11] = ...
+```
+
+之后在主函数中进行调用即可：
+
+```c
+if (ElemInt == type) {
+    MatrixGPUAdd<int><<<grid_size_1d, block_size_1d>>>(m1.cuda_addr, m2.cuda_addr, m3.cuda_addr, global_size);
+} else if (ElemFloat == type) {
+    MatrixGPUAdd<float><<<grid_size_1d, block_size_1d>>>(m1.cuda_addr, m2.cuda_addr, m3.cuda_addr, global_size);
+}
+
+ret = cudaGetLastError();  // 捕捉 kernel 函数中可能发生的错误
+ret = cudaDeviceSynchronize();
+```
+
+至于 `m1.cuda_addr` 这种东西是什么，可以看下文的内存设置，为矩阵申请 GPU 内存。
 
 ## 内存设置
 
@@ -67,7 +122,7 @@ cudaError_t InitMatrix(Matrix &matrix, int size=512, ElemType type=ElemInt) {
 ret = InitMatrix(m4, global_size, type);
 ```
 
-of course，除了设置矩阵大小和类型，最重要的是为矩阵赋值，如果矩阵是 `int` 类型，那么就 `malloc(sizeof(int) * size)`，如果是 `float` 类型，就 `malloc(sizeof(float) * size)`。为了处理不同的类型，我们使用一下模板：
+of course，除了设置矩阵大小和类型，最重要的是为矩阵分配空间和赋值，如果矩阵是 `int` 类型，那么就 `malloc(sizeof(int) * size)`，如果是 `float` 类型，就 `malloc(sizeof(float) * size)`。为了处理不同的类型，我们使用一下模板：
 
 ```c
 cudaError_t InitMatrix(Matrix &matrix, int size=512, ElemType type=ElemInt) {
@@ -111,15 +166,9 @@ cudaError_t AllocMem(Matrix& matrix, int size) {
 ```c
 template<typename T>
 cudaError_t AllocMem(Matrix& matrix, int size) {
-    cudaError_t ret;
-    size_t n_bytes = matrix.size * sizeof(T);
-    matrix.host_addr = malloc(n_bytes);                // 开辟 CPU 内存空间
-    ret = cudaMalloc((T**)&matrix.cuda_addr, n_bytes); // 开辟 GPU 内存空间
-    srand(666);
-    T* ptr = (T*)(matrix.host_addr);             // 获取矩阵首地址
-    for (int i = 0; i < matrix.size; i++) {
-        ptr[i] = (T)(rand() % 255);              // 初始化范围是 0 到 255
-    }
+
+    ...
+
     // cudaMemcpyHostToDevice 表示将 Host(CPU) 端拷贝到 GPU 端
     ret = cudaMemcpy(matrix.cuda_addr, matrix.host_addr, n_bytes, cudaMemcpyHostToDevice);
 }
@@ -154,6 +203,8 @@ void FreeMatirx(Matrix& matrix) {
 FreeMatirx(matrix...);
 ```
 
+在调用之前的矩阵加法的 cuda kernel 函数就大功告成，在学术圈已经可以交差了。但我依然推荐你看一看后面的内存泄漏、日志模块和精度对比，这是工业圈中必不可少的一环。
+
 ### 内存泄漏
 
 但是，程序写成这样真的好吗？
@@ -162,7 +213,7 @@ FreeMatirx(matrix...);
 
 假如框架组此时有矩阵加法和高斯滤波两个库。当调用我们提供的矩阵加法库发生异常时，比如内存无法申请，如 `matrix.host_addr` 的结果是空指针等异常，导致我们的库无法得到正确的结果。
 
-假设输入矩阵已经创建完毕，在创建输出矩阵时发生以下异常：
+假设输入矩阵 `src_1, src_2` 已经创建完毕，在创建输出矩阵 `gpu_dst` 时发生以下异常：
 
 ```c
 matrix.host_addr = malloc(n_bytes);          // 无法申请内存，返回空指针
@@ -172,7 +223,7 @@ for (int i = 0; i < matrix.size; i++) {
 }
 ```
 
-此时继续执行高斯滤波库，那么 `src_1` 和 `src_2` 这两个输入矩阵的内存并没有被释放，**就会导致内存泄漏**。除了使用 C++ 的 RAII 以及智能指针的技术管理这种内存泄漏外，还有一种在教科书中很少提及的 goto 语句。当发生异常时，我们直接跳转到内存释放函数，释放堆空间上的内存，避免泄漏：
+此时继续执行高斯滤波库，那么 `src_1` 和 `src_2` 这两个输入矩阵的内存依然在堆空间中并没有被释放，**就会导致内存泄漏**。除了使用 C++ 的 RAII 以及智能指针的技术管理这种内存泄漏外，还有一种在教科书中很少提及的 goto 语句。当发生异常时，我们直接跳转到内存释放函数，释放堆空间上的内存，避免泄漏：
 
 ```c
 template<typename T>
@@ -188,35 +239,39 @@ cudaError_t AllocMem(Matrix& matrix, int size) {
     ...
 }
 
-ret = InitMatrix(src_1, global_size, type);
-if (ret != cudaSuccess) {
-    goto EXIT;
-}
-ret = InitMatrix(src_2, global_size, type);   
-if (ret != cudaSuccess) {
-    goto EXIT;
-}
-ret = InitMatrix(cpu_dst, global_size, type); // 发生内存不足的异常
-if (ret != cudaSuccess) {
-    goto EXIT;
-}
-ret = InitMatrix(gpu_dst, global_size, type);
-if (ret != cudaSuccess) {
-    goto EXIT;
-}
+int main() {
+    ret = InitMatrix(src_1, global_size, type);
+    if (ret != cudaSuccess) {
+        goto EXIT;
+    }
+    ret = InitMatrix(src_2, global_size, type);   
+    if (ret != cudaSuccess) {
+        goto EXIT;
+    }
+    ret = InitMatrix(cpu_dst, global_size, type); // 发生内存不足的异常
+    if (ret != cudaSuccess) {
+        goto EXIT;
+    }
+    ret = InitMatrix(gpu_dst, global_size, type);
+    if (ret != cudaSuccess) {
+        goto EXIT;
+    }
 
 EXIT:
     FreeMatirx(src_1);
     FreeMatirx(src_2);
     FreeMatirx(cpu_dst);
     FreeMatirx(gpu_dst);
+
+    return 0;
+}
 ```
 
 这样，会保证程序的健壮性。在研一上课时，有个工程很强的老师讲到：工业界和学术界的代码完全不一样，需要写很多的异常处理来兜底，此时此刻我信了。
 
 什么？你说每次都写判断、然后 goto 的语法很丑？且无法获取准确的报错信息？
 
-## 错误检查
+## 报错时的日志模块
 
 在 cuda 运行时可能会发生一些错误，这些错误并不是在编译时期能直接确定的。如果我们对外提供的是 `so` 形式的动态库，出现错误会很难定位。不过我们可以使用 `cudaGetErrorName(cudaError_t status_code)` 这个 `API` 获取错误描述符，使用 `cudaGetErrorName(cudaError_t status_code)` 获取错误的具体描述。可以看下面的例子：
 
@@ -228,9 +283,7 @@ printf(" %s\n", cudaGetErrorString(ret));
 
 这样，如果阻塞等待 GPU 执行结束时发生了错误，就可以打印出错误的信息，供开发人员调试。那么，我们可不可以让报错代码更友好一些？报错时我想清楚的知道在哪个文件的哪一行出现了问题。
 
-在我之前的文章 [C 语言中的黑魔法：宏](https://muyuuuu.github.io/2024/02/03/define-macro/) 中介绍过，可以使用 `__FILE__` 宏来获取当前文件，使用 `__LINE__` 宏来获取当前行号。
-
-所以，我们把错误信息打印封装成一个函数，放到 `tools/common.cuh` 中：
+在我之前的文章 [C 语言中的黑魔法：宏](https://muyuuuu.github.io/2024/02/03/define-macro/) 中介绍过，可以使用 `__FILE__` 宏来获取当前文件，使用 `__LINE__` 宏来获取当前行号。所以，我们把错误信息打印封装成一个函数，放到 `tools/common.cuh` 中：
 
 ```c
 cudaErrot_t ErrorBackTrace(cudaError_t status_code, const char* file, int line_idx) {
@@ -265,7 +318,7 @@ CUDA ERROR:
          line = 157
 ```
 
-但是不是感觉函数的调用不够友好？在每次调用 cuda API 时都需要在后面跟上这三行代码，错误检查，异常退出释放内存。那么在使用[C 语言中的黑魔法：宏](https://muyuuuu.github.io/2024/02/03/define-macro/)z中介绍的 `do while(0)` 宏技巧简化一下代码：
+但是不是感觉函数的调用不够友好？在每次调用 cuda API 时都需要在后面跟上这三行代码，调用错误检查函数，异常退出释放内存。那么在使用[C 语言中的黑魔法：宏](https://muyuuuu.github.io/2024/02/03/define-macro/)中介绍的 `do while(0)` 宏技巧简化一下代码：
 
 ```c
 #define ErrorHandleWithLabel(ret, label)                  \
@@ -284,7 +337,7 @@ CUDA ERROR:
     } while(0)
 ```
 
-在 `ErrorHandleWithLabel` 宏中，传入 ret 和 label，发生错误时直接跳转到退出程序并释放内存，在 `ErrorHandleNoLabel` 宏中，只需要传入 ret，打印报错信息而不需要跳转。这样，代码再次简化：
+在 `ErrorHandleWithLabel` 宏中，传入 ret 和 label，发生错误时直接跳转到 label 标签处完成内存的释放，在 `ErrorHandleNoLabel` 宏中，只需要传入 ret，打印报错信息而不需要跳转。这样，代码再次简化：
 
 ```c
 template<typename T>
@@ -310,10 +363,6 @@ ErrorHandleWithLabel(ret, EXIT);        // 报错时跳转
 ret = InitMatrix(m2, global_size, type);
 ErrorHandleWithLabel(ret, EXIT);        // 报错时跳转
 ```
-
-## cuda 矩阵加法
-
-写了这么多，终于回到本文的主题：完成 cuda 端的矩阵加法。
 
 ## 精度对比
 
@@ -378,7 +427,7 @@ MatrixCompare(cpu_dst, gpu_dst, n_bytes); // 调用接口
 
 ## 结尾
 
-至此，一个矩阵加法的程序结束了。我也在思考一个问题：
+至此，一个矩阵加法的程序结束了，完成代码参考 `main.cu`。我也在思考一个问题：
 
 - goto 语法那里有没有更好的写法？但是依然需要保证程序异常退出时释放内存，避免内存泄漏
-- 如何使用 C++ 重构代码？减少类型判断、内存申请 `InitMatrix` 中的繁琐代码
+- 如何优化代码？减少类型判断、内存申请 `InitMatrix` 中的繁琐代码。这里我想到的是，将 `Matrix` 也声明为模板类型，避免指针来回来去的转换。

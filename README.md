@@ -22,4 +22,6 @@ nvcc main.cu
 
 1. `1helloworld`，安装与运行 hello world 级别的代码
 2. `2threadid`，线程模型中的索引计算
-3. `3matrixadd`，矩阵加法。小用一手模板，宏的黑魔法，以及课本中很少见的 goto 语句
+3. `3matrixadd`，矩阵加法。小用一手模板，宏的黑魔法，以及避免内存泄漏
+4. `4runtime`，运行时。继续使用模板精简代码，运行时信息查询，函数计时等
+

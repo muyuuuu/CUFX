@@ -134,7 +134,6 @@ int main() {
     Matrix m4;
 
     int global_size = 5120000;
-    // int local_size = 3200;
     int local_size = 32;
     ElemType type = ElemFloat;
 
@@ -143,9 +142,6 @@ int main() {
 
     size_t n_bytes =  type == ElemInt ? global_size * sizeof(int) : global_size * sizeof(float);
     cudaError_t ret;
-
-    ret = SetGPU();
-    ErrorHandleWithLabel(ret, EXIT);
 
     ret = InitMatrix(m1, global_size, type);
     ErrorHandleWithLabel(ret, EXIT);
