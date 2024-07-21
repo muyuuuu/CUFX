@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.10)
 
 project(main LANGUAGES CXX CUDA) # 指定项目和语言
 
+set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -O3 -Xptxas -dlcm=ca")
+
 find_package(CUDA REQUIRED)
 if (CUDA_FOUND)
     message(STATUS "CUDA INCLUDE FILES: ${CUDA_INCLUDE_DIRS}")

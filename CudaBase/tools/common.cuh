@@ -84,11 +84,14 @@ cudaError_t SetGPU() {
     printf(" device const  mem    \t %lu KB\n", prop.totalConstMem / 1024);
     printf(" device sms           \t %d \n", prop.multiProcessorCount);
     printf(" Cores                \t %d \n", GetCores(prop));
+    printf(" Support L1 cache     \t %d \n", prop.globalL1CacheSupported);
+    printf(" L2 cache size        \t %d MB \n", prop.l2CacheSize / 1024 / 1024);
     printf(" Max threads per block:  %d\n", prop.maxThreadsPerBlock);
     printf(" device register number in block \t %d  KB\n", prop.regsPerBlock / 1024);
     printf(" device register number in sm    \t %d  KB\n", prop.regsPerMultiprocessor / 1024);
     printf("Maximum amount of shared memory per block: %g KB\n", prop.sharedMemPerBlock / 1024.0);
     printf("Maximum amount of shared memory per SM:    %g KB\n", prop.sharedMemPerMultiprocessor / 1024.0);
+
     return ret;
 }
 
