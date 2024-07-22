@@ -87,6 +87,9 @@ cudaError_t SetGPU() {
     printf(" Support L1 cache     \t %d \n", prop.globalL1CacheSupported);
     printf(" L2 cache size        \t %d MB \n", prop.l2CacheSize / 1024 / 1024);
     printf(" Max threads per block:  %d\n", prop.maxThreadsPerBlock);
+    printf(" Max threads per    SM:  %d\n", prop.maxThreadsPerMultiProcessor);
+    printf(" Max blocks  per    SM:  %d\n", prop.maxBlocksPerMultiProcessor);
+    printf(" GPU Mem Bus width    :  %d\n", prop.memoryBusWidth);
     printf(" device register number in block \t %d  KB\n", prop.regsPerBlock / 1024);
     printf(" device register number in sm    \t %d  KB\n", prop.regsPerMultiprocessor / 1024);
     printf("Maximum amount of shared memory per block: %g KB\n", prop.sharedMemPerBlock / 1024.0);

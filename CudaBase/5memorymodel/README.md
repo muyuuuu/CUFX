@@ -132,6 +132,8 @@ printf("Maximum amount of shared memory per block: %g KB\n", prop.sharedMemPerBl
 printf("Maximum amount of shared memory per SM:    %g KB\n", prop.sharedMemPerMultiprocessor / 1024.0);   // 100 KB
 ```
 
+单个线程块最大允许使用 99KB 的共享内存，如果一个线程块需要使用的共享内存超过了 99KB，会导致核函数无法启动。
+
 ### 静态共享内存
 
 - 和全局静态内存相同，在编译时期就得确定大小
