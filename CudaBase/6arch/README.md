@@ -50,7 +50,63 @@ printf(" Max blocks  per    SM:  %d\n", prop.maxBlocksPerMultiProcessor);   // 2
 - 线程块（Grid）不要设计的太小
 - 线程块的数量要远远大于 SM 的数量，对指令和内存的操作进行延时隐藏
 
-## 延时隐藏
+## 延迟隐藏
+
+寻思没啥可说的，理论方面，掏出计算机组成原理中的多级流水图，和这个同一个意思，指令足够多的时候，用计算的指令与隐藏 IO 的指令。
+
+<p align="center">
+  <img src="../../imgs/pipelineflow.png" alt="Image" />
+</p>
+
+代码方面，可以看我之前写的代码：[任务流水：加快程序运行和减少内存占用我全都要
+](https://muyuuuu.github.io/2024/05/07/multi-pipeline/)。
 
 ## 避免线程束分化
 
+线程束中的所有线程同一时刻必须执行相同的指令。但是如果代码写的很差，比如由很多的 if else  分支，由于 GPU 没有负责的分支预测机制，这会导致每个线程执行不同的指令，并行性就会受到影响。如下所示的图和代码：
+
+<p align="center">
+  <img src="../../imgs/thread-split.png" alt="Image" />
+</p>
+
+```c
+__global__ void mathKernel1(float *c)
+{
+    int tid = blockIdx.x* blockDim.x + threadIdx.x;
+ 
+    float a = 0.0;
+    float b = 0.0;
+    if (tid % 2 == 0)
+    {
+        a = 100.0f;
+    }
+    else
+    {
+        b = 200.0f;
+    }
+    c[tid] = a + b;
+}
+```
+
+橙色表示满足 if 分支的线程，绿色表示满足 else 分支的线程，紫色表示线程被阻塞。因为不满足条件的线程在等待，线程束分化就会导致同一线程束内的线程不能同时活跃，所以为了获取最佳性能，避免同一线程束中的线程有不同的执行路径。
+
+代码修改如下：
+
+```c
+__global__ void mathKernel1(float *c)
+{
+    int tid = blockIdx.x* blockDim.x + threadIdx.x;
+ 
+    float a = 0.0;
+    float b = 0.0;
+    if ((tid / 32) % 2 == 0)  // 修改这里
+    {
+        a = 100.0f;
+    }
+    else
+    {
+        b = 200.0f;
+    }
+    c[tid] = a + b;
+}
+```
