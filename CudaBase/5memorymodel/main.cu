@@ -1,6 +1,7 @@
 #include <cstdio>
 
 #include "../tools/common.cuh"
+#include "func.cu"
 
 #define NUM 10
 
@@ -87,6 +88,7 @@ int main() {
     ConstantMemFunc<<<1, 1>>>();
     ret = cudaDeviceSynchronize();
 
+    Func();
 EXIT:
     return 0;
 }

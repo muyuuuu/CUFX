@@ -204,3 +204,32 @@ ret = cudaMemcpyToSymbol(c_val_0, &val, sizeof(int));
 
 - 共享内存时可编程的，可以设置大小为 0，8，16，32，64 或者 100KB，其余用作 L1 缓存和纹理内存。但是不一定生效，GPU 会选择最优的设置。
 
+## 统一内存
+
+> 不是显存也不是内存，而是 CPU 和 GPU 可以访问且保持一致性的虚拟存储器。统一内存则能将数据放在一个合适的位置上(可以使主机，也可以是设备)
+
+- 不需要将主机内存拷贝到设备，而是主机端调用 `cudaMallocManaged` 创建，主机和设备直接读写。简化编程
+- 允许 GPU 在使用了统一内存的情况下，进行超量分配。超出 GPU 额度的部分放在主机上，这可能是使用统一内存时最大的好处，因为一般来说，CPU 的内存更多，但处理速度较低
+-底层的统一内存实现，会自动将一部分数据放置在距离某个存储器更近的位置(如部分放置在某卡的显存中，部分放置到内存中)这种就近的数据存放，有利于提升性能
+
+代码如下所示：
+
+```c
+double* x;
+cudaMallocManaged((void**)&x, M);
+cudaFree(x);
+```
+
+统一内存也可以静态分配，只要在修饰符的 `__device__` 的基础上再加上修饰符 `__managed__` 即可。和全局内存相比，性能如下所示（代码为u与 `func.ch`）：
+
+```c
+ In Epoch 1, Host Memory Cost 0.0164 ms 
+ In Epoch 2, Host Memory Cost 0.0073 ms 
+ In Epoch 3, Host Memory Cost 0.0072 ms 
+ cudaMemcpy Cost 0.6000 ms 
+ In Epoch 1, Unify Memory Cost 0.0819 ms 
+ In Epoch 2, Unify Memory Cost 0.0819 ms 
+ In Epoch 3, Unify Memory Cost 0.0813 ms 
+```
+
+如果不考虑 `cudaMemcpy`，那么传统内存最快；当数据量较大时，`cudaMallocManaged` 会更快，因为 `cudaMemcpy` 较大。
