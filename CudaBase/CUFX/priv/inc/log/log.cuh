@@ -1,7 +1,10 @@
 #ifndef __LOG_CUH__
 #define __LOG_CUH__
 
+#include "data_type.cuh"
+
 #include <cstdio>
+#include <string>
 
 void ErrorBackTrace(cudaError_t status_code, const char *file, int line_idx);
 
@@ -15,7 +18,16 @@ void ErrorBackTrace(cudaError_t status_code, const char *file, int line_idx);
 
 #define ErrorHandleNoLabel(ret)                                                                                        \
     do {                                                                                                               \
-        if (cudaSuccess != ret) { ErrorBackTrace(ret, __FILE__, __LINE__); }                                           \
+        if (cudaSuccess != ret) {                                                                                      \
+            ErrorBackTrace(ret, __FILE__, __LINE__);                                                                   \
+        }                                                                                                              \
     } while (0)
 
 #endif
+
+#define LOG(tag, format, ...)                                                                                          \
+    if (CpuLogLevelInfo == tag)                                                                                        \
+        printf("[%s] [%s %s %d] " format, "[I] ", __FILE__, __FUNCTION__, __LINE__, ##__VA_ARGS__);                    \
+    else                                                                                                               \
+        printf("[%s] [%s %s %d] " format, "[E] ", __FILE__, __FUNCTION__, __LINE__, ##__VA_ARGS__);                    \
+    fflush(stdout)
