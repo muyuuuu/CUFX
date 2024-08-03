@@ -37,7 +37,7 @@ make install
 
 ### CUFX
 
-`CUFX`，取自单词 Cuda Framework eXtended 用来装逼。包含一些算子的实际项目，严格组织代码结构，可以以此搭建 `cuda` 计算框架，初步构想：
+`cuda` 计算框架 `CUFX`，取自单词 Cuda Framework eXtended 用来装逼。包含一些算子的实际项目，严格组织代码结构，TODO：
 
 - 线程池
 - 内存池
