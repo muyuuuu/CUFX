@@ -39,7 +39,7 @@ make install
 | `6arch`        | 计算架构相关的东西，流多处理器、延时隐藏、线程束分化等问题                        |
 | `7stream`      | 多流计算，流同步、回调等                                                          |
 
-### CUFX
+## `CUFX`
 
 `cuda` 计算框架 `CUFX`，取自单词 `Cuda Framework eXtended` 用来装逼。包含一些算子的实际项目，严格组织代码结构，TODO：
 
@@ -50,3 +50,8 @@ make install
 - 可对外提供动态库，直接使用
 
 **下班后有点头晕眼花，但还是在艰难施工中**。 ~~也许哪天学到高大上的写法，比如一些好的日志实现，好的架构组织，我就回来填坑。~~ 如果你有想法，哪怕是练手，想练习一个内存池，也欢迎。
+
+## 参考
+
+1. https://www.cnblogs.com/moonzzz/p/17621574.html
+2. https://lulaoshi.info/gpu/python-cuda/streams.html
