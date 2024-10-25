@@ -1,15 +1,16 @@
-DIRECTORY="build"  
+DIRECTORY="build"
 
 if [ -d "$DIRECTORY" ]; then
-    rm -rf "$DIRECTORY"/*
+    echo "";
+    # rm -rf "$DIRECTORY"/*
 else
-    mkdir -p "$DIRECTORY"  
+    mkdir -p "$DIRECTORY"
 fi
 
-cd "$DIRECTORY"  
+cd "$DIRECTORY"
 
 cmake ..
 
-make 
+make
 
 ./bin/test_cufx
