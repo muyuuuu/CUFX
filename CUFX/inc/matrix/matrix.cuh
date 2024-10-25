@@ -18,6 +18,9 @@ public:
     size_t size;
     bool is_matrix_valid;
     Matrix() = delete;
+    Matrix(const Matrix &) = delete;
+    Matrix &operator=(const Matrix &) = delete;
+
     Matrix(const ElemType &elem_type, const Shape &shape, const MemoryType &memory_type, const IsAsync &is_async);
 
     template <typename T>

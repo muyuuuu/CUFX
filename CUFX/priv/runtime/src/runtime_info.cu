@@ -1,5 +1,7 @@
 #include <cstdio>
 
+#include "runtime_info.cuh"
+
 int GetCores(cudaDeviceProp &prop) {
     int cores = 0;
     int mp = prop.multiProcessorCount;
@@ -52,7 +54,9 @@ int GetCores(cudaDeviceProp &prop) {
             printf("Unknown device type\n");
         }
         break;
-    default: printf("Unknown device type\n"); break;
+    default:
+        printf("Unknown device type\n");
+        break;
     }
     return cores;
 }

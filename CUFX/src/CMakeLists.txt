@@ -6,13 +6,16 @@ list(APPEND PROJECT_INC_DIR "${CMAKE_SOURCE_DIR}/inc/matrix")
 list(APPEND PROJECT_INC_DIR "${CMAKE_SOURCE_DIR}/inc/log")
 
 # ========================  PRIVATE HEAD FILES ==============
-set(PROJECT_PRIV_DIR)
+set_property(GLOBAL PROPERTY PROJECT_PRIV_DIR_HEAD_FILE)
 
-# list(APPEND PROJECT_PRIV_DIR "${CMAKE_SOURCE_DIR}/priv/runtime/inc")
-# aux_source_directory("${CMAKE_SOURCE_DIR}/priv/runtime/src" ALL_MODULE_SRC)
+list(APPEND PROJECT_PRIV_DIR_HEAD_FILE "${CMAKE_SOURCE_DIR}/priv/runtime/inc")
+aux_source_directory("${CMAKE_SOURCE_DIR}/priv/runtime/src" ALL_MODULE_SRC)
 
-# list(APPEND PROJECT_PRIV_DIR "${CMAKE_SOURCE_DIR}/priv/time/inc")
-# aux_source_directory("${CMAKE_SOURCE_DIR}/priv/time/src" ALL_MODULE_SRC)
+list(APPEND PROJECT_PRIV_DIR_HEAD_FILE "${CMAKE_SOURCE_DIR}/priv/time/inc")
+aux_source_directory("${CMAKE_SOURCE_DIR}/priv/time/src" ALL_MODULE_SRC)
+
+list(APPEND PROJECT_PRIV_DIR_HEAD_FILE "${CMAKE_SOURCE_DIR}/priv/testcase/inc")
+aux_source_directory("${CMAKE_SOURCE_DIR}/priv/testcase/src" ALL_MODULE_SRC)
 
 # 定义一个添加新模块的方法
 macro(add_inc_module module)
@@ -24,6 +27,8 @@ endmacro(add_inc_module)
 
 add_inc_module(log)
 add_inc_module(matrix)
+
+set(PROJECT_PRIV_DIR ${PROJECT_PRIV_DIR_HEAD_FILE})
 
 # 定义一个添加新模块的方法
 macro(add_op_module module)
@@ -37,11 +42,12 @@ macro(add_op_module module)
 endmacro(add_op_module)
 
 add_op_module(reductsum)  # 注册模块
-    
+
 
 # # 制作动态库
 set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/build/lib)
 message( STATUS "ALL_MODULE_SRC = ${ALL_MODULE_SRC}")
+message( STATUS "ALL_MODULE_INC = ${PROJECT_PRIV_DIR_HEAD_FILE}")
 
 
 add_library(cufx SHARED ${ALL_MODULE_SRC})

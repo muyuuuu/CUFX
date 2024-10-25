@@ -9,6 +9,10 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../inc/log)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../inc/matrix)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../inc/operator)
 
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../priv/runtime/inc)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../priv/testcase/inc)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../priv/time/inc)
+
 add_executable(test_cufx ${SRC_LIST} main.cu)
 
 target_link_libraries(test_cufx PRIVATE cufx)
