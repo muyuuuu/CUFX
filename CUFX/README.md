@@ -13,12 +13,13 @@ bash build_run.sh  # 编译执行
 │   ├── data_type                                       # 数据类型
 │   │   └── data_type.cuh
 │   ├── log                                             # 日志声明
-│   │   └── log.cuh                                     
+│   │   └── log.cuh
 │   ├── matrix                                          # 矩阵声明
-│   │   └── matrix.cuh 
+│   │   └── matrix.cuh
 │   └── operator                                        # cuda 算子
 │       └── external.cuh
 ├── priv                                   # 内部接口，不对外提供
+│   ├── CMakeLists.txt                                  # 打包成库，对 src 和 test 可见
 │   ├── runtime                                         # 运行时信息
 │   │   ├── inc
 │   │   │   └── runtime_info.cuh
