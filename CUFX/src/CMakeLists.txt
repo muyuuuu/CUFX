@@ -1,40 +1,37 @@
-# ========================  PUBLIC HEAD FILES ==============
-set(PROJECT_INC_DIR)
-list(APPEND PROJECT_INC_DIR "${CMAKE_SOURCE_DIR}/inc/data_type")
-list(APPEND PROJECT_INC_DIR "${CMAKE_SOURCE_DIR}/inc/operator")
-list(APPEND PROJECT_INC_DIR "${CMAKE_SOURCE_DIR}/inc/matrix")
-list(APPEND PROJECT_INC_DIR "${CMAKE_SOURCE_DIR}/inc/log")
+include("${CMAKE_SOURCE_DIR}/inc/CMakeLists.txt")
+include("${CMAKE_SOURCE_DIR}/priv/CMakeLists.txt")
 
-# ========================  PRIVATE HEAD FILES ==============
-set_property(GLOBAL PROPERTY PROJECT_PRIV_DIR_HEAD_FILE)
-
-list(APPEND PROJECT_PRIV_DIR_HEAD_FILE "${CMAKE_SOURCE_DIR}/priv/runtime/inc")
-aux_source_directory("${CMAKE_SOURCE_DIR}/priv/runtime/src" ALL_MODULE_SRC)
-
-list(APPEND PROJECT_PRIV_DIR_HEAD_FILE "${CMAKE_SOURCE_DIR}/priv/time/inc")
-aux_source_directory("${CMAKE_SOURCE_DIR}/priv/time/src" ALL_MODULE_SRC)
-
-list(APPEND PROJECT_PRIV_DIR_HEAD_FILE "${CMAKE_SOURCE_DIR}/priv/testcase/inc")
-aux_source_directory("${CMAKE_SOURCE_DIR}/priv/testcase/src" ALL_MODULE_SRC)
-
+# ====================================================================
+# ====================================================================
+# ====================================================================
 # 定义一个添加新模块的方法
-macro(add_inc_module module)
+macro(add_common_module module)
     # 搜索代码文件
     set(MODULE_SRC "${CMAKE_CURRENT_SOURCE_DIR}/${module}")
-    message(STATUS ">>>>>> MODULE_SRC = ${MODULE_SRC}")
     aux_source_directory(${MODULE_SRC} ALL_MODULE_SRC)
-endmacro(add_inc_module)
+endmacro(add_common_module)
 
-add_inc_module(log)
-add_inc_module(matrix)
+add_common_module(log)
+add_common_module(matrix)
 
-set(PROJECT_PRIV_DIR ${PROJECT_PRIV_DIR_HEAD_FILE})
-
+# ====================================================================
+# ====================================================================
+# ====================================================================
 # 定义一个添加新模块的方法
+
+get_property(PROJECT_PRIV_INC GLOBAL PROPERTY "PROJECT_PRIV_INC")
+get_property(PROJECT_PRIV_SRC GLOBAL PROPERTY "PROJECT_PRIV_SRC")
+
+set(MODULE_PRIV_INC)
+set(ALL_MODULE_SRC)
+
+list(APPEND MODULE_PRIV_INC ${PROJECT_PRIV_INC})
+list(APPEND ALL_MODULE_SRC ${PROJECT_PRIV_SRC})
+
 macro(add_op_module module)
-    # 模块自身的头文件视为私有方法，不对外暴露，添加到 PROJECT_PRIV_DIR 中
+    # 模块自身的头文件视为私有方法，不对外暴露，添加到 MODULE_PRIV_INC 中
     set(MODULE_INC "${CMAKE_CURRENT_SOURCE_DIR}/${module}/inc")
-    list(APPEND PROJECT_PRIV_DIR ${MODULE_INC})
+    list(APPEND MODULE_PRIV_INC ${MODULE_INC})
 
     # 搜索代码文件
     set(MODULE_SRC "${CMAKE_CURRENT_SOURCE_DIR}/${module}/src")
@@ -44,12 +41,13 @@ endmacro(add_op_module)
 add_op_module(reductsum)  # 注册模块
 
 
-# # 制作动态库
+# 制作动态库
 set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/build/lib)
-message( STATUS "ALL_MODULE_SRC = ${ALL_MODULE_SRC}")
-message( STATUS "ALL_MODULE_INC = ${PROJECT_PRIV_DIR_HEAD_FILE}")
-
+message( STATUS "[SRC] ALL_MODULE_SRC = ${ALL_MODULE_SRC}")
+message( STATUS "[SRC] MODULE_PRIV_INC = ${MODULE_PRIV_INC}")
 
 add_library(cufx SHARED ${ALL_MODULE_SRC})
-target_include_directories(cufx PRIVATE ${PROJECT_PRIV_DIR})
+target_include_directories(cufx PRIVATE ${MODULE_PRIV_INC})
+
+get_property(PROJECT_PRIV_INC GLOBAL PROPERTY "PROJECT_PRIV_INC")
 include_directories(${PROJECT_INC_DIR})

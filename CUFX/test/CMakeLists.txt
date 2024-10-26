@@ -1,18 +1,17 @@
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/inc)
+# inc module
+get_property(PROJECT_PRIV_INC GLOBAL PROPERTY "PROJECT_PRIV_INC")
+include_directories(${PROJECT_INC_DIR})
 
+message(STATUS "[TEST] PROJECT_INC_DIR = ${PROJECT_INC_DIR}")
+
+# priv module
+
+# testcase module
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/unittest/inc)
+aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/unittest/src SRC_LIST)
 aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/testcase SRC_LIST)
 
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/build/bin)
 
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../inc/data_type)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../inc/log)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../inc/matrix)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../inc/operator)
-
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../priv/runtime/inc)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../priv/testcase/inc)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../priv/time/inc)
-
 add_executable(test_cufx ${SRC_LIST} main.cu)
-
 target_link_libraries(test_cufx PRIVATE cufx)
