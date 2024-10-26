@@ -1,10 +1,14 @@
 # inc module
-get_property(PROJECT_PRIV_INC GLOBAL PROPERTY "PROJECT_PRIV_INC")
+get_property(PROJECT_INC_DIR GLOBAL PROPERTY "PROJECT_INC_DIR")
 include_directories(${PROJECT_INC_DIR})
 
 message(STATUS "[TEST] PROJECT_INC_DIR = ${PROJECT_INC_DIR}")
 
 # priv module
+get_property(PROJECT_PRIV_INC GLOBAL PROPERTY "PROJECT_PRIV_INC")
+include_directories(${PROJECT_PRIV_INC})
+
+message(STATUS "[TEST] PROJECT_PRIV_INC = ${PROJECT_PRIV_INC}")
 
 # testcase module
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/unittest/inc)
