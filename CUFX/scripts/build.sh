@@ -11,6 +11,5 @@ cd "$DIRECTORY"
 
 cmake ..
 
-make
+make -j8
 
-./bin/test_cufx

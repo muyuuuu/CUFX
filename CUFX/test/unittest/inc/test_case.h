@@ -2,6 +2,7 @@
 #define _TEST_CASE_H__
 
 #include "test_impl.h"
+#include <string_view>
 
 namespace Test {
 
@@ -22,6 +23,8 @@ static std::vector<TestFunc> test_funcs;
 void RegisterTestCase(const std::string &base, const std::string &name, const std::function<void()> &_func);
 
 int RunAllTestCases();
+
+int RunSingleTestCase(const std::string &test_case_name);
 
 } // namespace Test
 

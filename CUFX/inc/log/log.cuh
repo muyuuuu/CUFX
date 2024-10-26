@@ -35,4 +35,8 @@ typedef enum CpuLogLevel {
         printf("[%s] [%s %s %d] " format, "[E] ", __FILE__, __FUNCTION__, __LINE__, ##__VA_ARGS__);                    \
     fflush(stdout)
 
+#define LOGE(format, ...) LOG(CpuLogLevelError, format, ##__VA_ARGS__)
+
+#define LOGI(format, ...) LOG(CpuLogLevelInfo, format, ##__VA_ARGS__)
+
 #endif
