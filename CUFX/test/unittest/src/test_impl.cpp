@@ -18,4 +18,15 @@ int RunAllTestCases() {
     return 0;
 }
 
+int RunSingleTestCase(const std::string &test_case_name) {
+    for (int i = 0; i < test_funcs.size(); i++) {
+        TestFunc &t = test_funcs[i];
+        if (t.name == test_case_name) {
+            t.func();
+        }
+    }
+    std::cout << " === Single TestCase [" << test_case_name << "] Passed.\n";
+    return 0;
+}
+
 } // namespace Test
