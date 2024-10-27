@@ -13,11 +13,6 @@ Matrix::Matrix(const ElemType &elem_type, const Shape &shape, const MemoryType &
     this->size = this->width * this->height * this->channel;
 }
 
-template <typename T>
-size_t Matrix::GetBytes<T>() {
-    return this->height * this->width * this->channel * sizeof(T);
-}
-
 cudaError_t Matrix::MatrixCreate() {
     if ((nullptr != this->host_addr) || (nullptr != this->cuda_addr)) {
         LOG(CpuLogLevelError, "First Alloc, Address Should be NULL \n");
@@ -82,7 +77,7 @@ cudaError_t Matrix::MallocMem<T>() {
 
         // 只有内存都创建成功时 才给 CPU 内存分配随机数
         if (cudaSuccess == ret) {
-            RandomData<T>((T *)this->host_addr, this->size);
+            RandomData<T>((T *)this->host_addr, this->height, this->width, this->channel);
 
             ret = cudaMemcpy(this->cuda_addr, this->host_addr, this->GetBytes<T>(), cudaMemcpyHostToDevice);
             ErrorHandleNoLabel(ret);
@@ -99,7 +94,7 @@ cudaError_t Matrix::UVAAllocMem<T>() {
         LOGE("malloc failed\n");
         return cudaErrorMemoryAllocation;
     } else {
-        RandomData<T>((T *)this->host_addr, this->GetBytes<T>());
+        RandomData<T>((T *)this->host_addr, this->height, this->width, this->channel);
     }
 
     cudaError_t ret = cudaMallocManaged((void **)&this->host_addr, this->GetBytes<T>());

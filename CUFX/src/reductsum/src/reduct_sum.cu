@@ -14,11 +14,11 @@ cudaError_t ReductSumCImpl(T const *src, u_long *res) {
 cudaError_t ReductSum(const Matrix &src, void *val) {
     cudaError_t ret = cudaSuccess;
 
-    if (ElemType::ElemInt == src.elem_type) {
-        ret = ReductSumCImpl<int>((int *)(src.host_addr), reinterpret_cast<u_long *>(val));
-    } else if (ElemType::ElemFloat == src.elem_type) {
-        ret = ReductSumCImpl<float>((float *)(src.host_addr), reinterpret_cast<float *>(val));
-    }
-    ErrorHandleNoLabel(ret);
+    // if (ElemType::ElemInt == src.elem_type) {
+    //     ret = ReductSumCImpl<int>((int *)(src.host_addr), reinterpret_cast<u_long *>(val));
+    // } else if (ElemType::ElemFloat == src.elem_type) {
+    //     ret = ReductSumCImpl<float>((float *)(src.host_addr), reinterpret_cast<float *>(val));
+    // }
+    // ErrorHandleNoLabel(ret);
     return ret;
 }

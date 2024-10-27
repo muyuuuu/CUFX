@@ -27,6 +27,11 @@ TestCase(CudaOp, Gemm) {   // Gemm 是 TestCase 的名字
 5. 其余用给出的 clang-format 自动格式化
 6. 可以写中文注释
 
+# 未完工
+
+- [ ] 零拷贝内存
+- [ ] 多流时异步操作，需要思考下如何实现
+
 # 编译运行
 
 ```
