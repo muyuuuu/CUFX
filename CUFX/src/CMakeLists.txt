@@ -1,5 +1,6 @@
 include("${CMAKE_SOURCE_DIR}/inc/CMakeLists.txt")
 include("${CMAKE_SOURCE_DIR}/priv/CMakeLists.txt")
+set(ALL_MODULE_SRC)
 
 # ====================================================================
 # ====================================================================
@@ -23,7 +24,6 @@ get_property(PROJECT_PRIV_INC GLOBAL PROPERTY "PROJECT_PRIV_INC")
 get_property(PROJECT_PRIV_SRC GLOBAL PROPERTY "PROJECT_PRIV_SRC")
 
 set(MODULE_PRIV_INC)
-set(ALL_MODULE_SRC)
 
 list(APPEND MODULE_PRIV_INC ${PROJECT_PRIV_INC})
 list(APPEND ALL_MODULE_SRC ${PROJECT_PRIV_SRC})

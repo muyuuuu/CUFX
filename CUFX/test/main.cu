@@ -1,4 +1,4 @@
-#include "test_case.h"
+#include "test_case.cuh"
 #include "log.cuh"
 
 int main(int argn, char **argv) {

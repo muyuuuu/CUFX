@@ -1,7 +1,7 @@
 #ifndef _TEST_CASE_H__
 #define _TEST_CASE_H__
 
-#include "test_impl.h"
+#include "test_impl.cuh"
 #include <string_view>
 
 namespace Test {

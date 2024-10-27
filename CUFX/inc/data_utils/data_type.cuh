@@ -1,19 +1,22 @@
 #ifndef __ELEM_TYPE_CUH__
 #define __ELEM_TYPE_CUH__
 
-typedef enum ElemType {
+#include <type_traits> // for SFINAE
+#include <memory>      // for unique ptr
+
+typedef enum class ElemType : int {
     ElemInvalid = 1,
     ElemInt = 2,
     ElemFloat = 3,
 } ElemType;
 
-typedef enum IsAsync {
+typedef enum class IsAsync : int {
     IsAsyncInvalid = 1,
     IsAsyncTrue,
     IsAsyncFalse,
 } IsAsync;
 
-typedef enum MemoryType {
+typedef enum class MemoryType : int {
     MemoryTypeInvalid = 1,
     GlobalMemory,
     ZeroCopyMemory,

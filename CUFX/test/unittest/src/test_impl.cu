@@ -1,4 +1,5 @@
-#include "test_case.h"
+#include "test_case.cuh"
+#include "log.cuh"
 
 namespace Test {
 
@@ -10,11 +11,11 @@ int RunAllTestCases() {
     int num = 0;
     for (int i = 0; i < test_funcs.size(); i++) {
         TestFunc &t = test_funcs[i];
-        std::cout << " >>> Test " << t.base << " " << t.name << std::endl;
+        LOGI(" >>> Test %s %s \n", t.base.c_str(), t.name.c_str());
         t.func();
         num += 1;
     }
-    std::cout << " === Total : " << test_funcs.size() << ", Passed : " << num << std::endl;
+    LOGI(" >>> Total %lu , Passed %d \n", test_funcs.size(), num);
     return 0;
 }
 
@@ -25,7 +26,7 @@ int RunSingleTestCase(const std::string &test_case_name) {
             t.func();
         }
     }
-    std::cout << " === Single TestCase [" << test_case_name << "] Passed.\n";
+    LOGI(" >>> Single TestCase [%s] Passed.\n", test_case_name.c_str());
     return 0;
 }
 
