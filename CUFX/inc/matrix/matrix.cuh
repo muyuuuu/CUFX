@@ -35,7 +35,16 @@ public:
 
     // 获取字节数
     template <typename T>
-    size_t GetBytes();
+    size_t GetBytes() const {
+        return this->height * this->width * this->channel * sizeof(T);
+    }
+
+    // 访问矩阵元素
+    template <typename T>
+    T At(int h, int w, int c) const {
+        T *data = reinterpret_cast<T *>(host_addr);
+        return data[h * this->width * this->channel + this->channel * w + c];
+    }
 
     ~Matrix();
 

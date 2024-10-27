@@ -43,11 +43,12 @@ add_op_module(reductsum)  # 注册模块
 
 # 制作动态库
 set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/build/lib)
-message( STATUS "[SRC] ALL_MODULE_SRC = ${ALL_MODULE_SRC}")
-message( STATUS "[SRC] MODULE_PRIV_INC = ${MODULE_PRIV_INC}")
 
 add_library(cufx SHARED ${ALL_MODULE_SRC})
-target_include_directories(cufx PRIVATE ${MODULE_PRIV_INC})
+message( STATUS "[SRC] ALL_MODULE_SRC = ${ALL_MODULE_SRC}")
 
-get_property(PROJECT_PRIV_INC GLOBAL PROPERTY "PROJECT_PRIV_INC")
-include_directories(${PROJECT_INC_DIR})
+get_property(PROJECT_INC_DIR GLOBAL PROPERTY "PROJECT_INC_DIR")
+list(APPEND MODULE_PRIV_INC ${PROJECT_INC_DIR})
+
+message( STATUS "[SRC] MODULE_PRIV_INC = ${MODULE_PRIV_INC}")
+target_include_directories(cufx PRIVATE ${MODULE_PRIV_INC})
