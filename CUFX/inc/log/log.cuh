@@ -30,9 +30,11 @@ typedef enum CpuLogLevel {
 
 #define LOG(tag, format, ...)                                                                                          \
     if (CpuLogLevelInfo == tag)                                                                                        \
-        printf("[%s] [%s %s %d] " format, "[I] ", __FILE__, __FUNCTION__, __LINE__, ##__VA_ARGS__);                    \
+        printf("Level : %s \n \tFILE: %s \n \tFUNC: %s \n \tLINE: %d\n \tINFO: " format, "[I]", __FILE__,              \
+               __FUNCTION__, __LINE__, ##__VA_ARGS__);                                                                 \
     else                                                                                                               \
-        printf("[%s] [%s %s %d] " format, "[E] ", __FILE__, __FUNCTION__, __LINE__, ##__VA_ARGS__);                    \
+        printf("Level : %s \n \tFILE: %s \n \tFUNC: %s \n \tLINE: %d\n \tINFO: " format, "[E]", __FILE__,              \
+               __FUNCTION__, __LINE__, ##__VA_ARGS__);                                                                 \
     fflush(stdout)
 
 #define LOGE(format, ...) LOG(CpuLogLevelError, format, ##__VA_ARGS__)

@@ -1,6 +1,8 @@
 #ifndef _TEST_IMPL_H__
 #define _TEST_IMPL_H__
 
+#include "log.cuh"
+
 #include <iostream>
 #include <sstream>
 #include <vector>
@@ -19,7 +21,7 @@ public:
 
     virtual ~TestOp() {
         if (!ok) {
-            std::cerr << file_name << " : " << line << " : " << stream.str() << std::endl;
+            LOGE("%s : %d : %s\n", file_name.c_str(), line, stream.str().c_str());
             exit(-1);
         }
     }

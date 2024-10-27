@@ -25,6 +25,7 @@ TestCase(CudaOp, Gemm) {   // Gemm 是 TestCase 的名字
 3. 宏定义全部大写
 4. 不能超过 120 列
 5. 其余用给出的 clang-format 自动格式化
+6. 可以写中文注释
 
 # 编译运行
 
