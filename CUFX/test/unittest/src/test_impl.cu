@@ -20,13 +20,19 @@ int RunAllTestCases() {
 }
 
 int RunSingleTestCase(const std::string &test_case_name) {
+    int num = 0;
     for (int i = 0; i < test_funcs.size(); i++) {
         TestFunc &t = test_funcs[i];
         if (t.name == test_case_name) {
             t.func();
+            num += 1;
         }
     }
-    LOGI(" >>> Single TestCase [%s] Passed.\n", test_case_name.c_str());
+    if (1 == num) {
+        LOGI(" >>> Single TestCase [%s] Passed.\n", test_case_name.c_str());
+    } else {
+        LOGE(" TestCase [%s] not exists.\n", test_case_name.c_str());
+    }
     return 0;
 }
 

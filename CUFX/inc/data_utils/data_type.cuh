@@ -3,6 +3,7 @@
 
 #include <type_traits> // for SFINAE
 #include <memory>      // for unique ptr
+#include <cassert>     // assert
 
 typedef enum class ElemType : int {
     ElemInvalid = 1,
