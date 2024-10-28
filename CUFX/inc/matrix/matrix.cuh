@@ -36,12 +36,14 @@ public:
     // 获取字节数
     template <typename T>
     size_t GetBytes() const {
+        CheckType<T>();
         return this->height * this->width * this->channel * sizeof(T);
     }
 
     // 访问矩阵元素
     template <typename T>
     T At(int h, int w, int c) const {
+        CheckType<T>();
         T *data = reinterpret_cast<T *>(host_addr);
         return data[h * this->width * this->channel + this->channel * w + c];
     }
@@ -59,6 +61,20 @@ private:
     // 统一内存分配
     template <typename T>
     cudaError_t UVAAllocMem();
+
+    template <typename T>
+    void CheckType() const {
+        switch (this->elem_type) {
+        case ElemType::ElemInt:
+            assert(std::is_integral<T>::value);
+            break;
+        case ElemType::ElemFloat:
+            assert(std::is_floating_point<T>::value);
+            break;
+        default:
+            break;
+        }
+    }
 };
 
 #endif
