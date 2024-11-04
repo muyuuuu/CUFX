@@ -48,6 +48,13 @@ public:
         return data[h * this->width * this->channel + this->channel * w + c];
     }
 
+    template <typename T>
+    T *GetData() const {
+        CheckType<T>();
+        T *data = reinterpret_cast<T *>(host_addr);
+        return data;
+    }
+
     ~Matrix();
 
     // 创建矩阵
