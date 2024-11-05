@@ -49,9 +49,9 @@ public:
     }
 
     template <typename T>
-    T *GetData() const {
+    T *GetCudaData() const {
         CheckType<T>();
-        T *data = reinterpret_cast<T *>(host_addr);
+        T *data = reinterpret_cast<T *>(cuda_addr);
         return data;
     }
 

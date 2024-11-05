@@ -21,7 +21,7 @@ T ReductSumCRun(const Matrix &src, T &val) {
 }
 
 TestCase(CudaOp, ReductSumFloat) {
-    Matrix src{ElemType::ElemFloat, {4, 4, 1}, MemoryType::GlobalMemory, IsAsync::IsAsyncFalse};
+    Matrix src{ElemType::ElemFloat, {10, 40, 3}, MemoryType::GlobalMemory, IsAsync::IsAsyncFalse};
     cudaError_t cuda_ret = src.MatrixCreate();
 
     src.GetBytes<float>();
@@ -44,7 +44,7 @@ TestCase(CudaOp, ReductSumFloat) {
         ASSERT_EQ(c_ret, 0); // 运行成功应该返回 0
     }
 
-    ASSERT_EQ(c_res, cuda_res);
+    ASSERT_NEAREQ(c_res, cuda_res);
 }
 
 TestCase(CudaOp, ReductSumInt) {
