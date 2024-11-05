@@ -6,6 +6,7 @@
 #include <iostream>
 #include <sstream>
 #include <vector>
+#include <cmath>
 #include <string>
 #include <functional>
 
@@ -53,6 +54,15 @@ public:
 
 #undef BINARY_OP
 
+    template <typename X, typename Y>
+    TestOp &IsNearEqual(const X &x, const Y &y) {
+        if (std::fabs(x - y) > 1e-6) {
+            stream << " Assert " << x << " near equal " << y << " Failed ";
+            ok = false;
+        }
+        return *this;
+    }
+
 private:
     std::string file_name;
     int line;
@@ -64,6 +74,7 @@ private:
 
 #define ASSERT_TRUE(c) Test::TestOp(__FILE__, __LINE__).IsTrue((c), #c)
 #define ASSERT_EQ(a, b) Test::TestOp(__FILE__, __LINE__).IsEqual((a), (b))
+#define ASSERT_NEAREQ(a, b) Test::TestOp(__FILE__, __LINE__).IsNearEqual((a), (b))
 #define ASSERT_NE(a, b) Test::TestOp(__FILE__, __LINE__).IsNotEqual((a), (b))
 #define ASSERT_GE(a, b) Test::TestOp(__FILE__, __LINE__).IsGreatEqual((a), (b))
 #define ASSERT_GT(a, b) Test::TestOp(__FILE__, __LINE__).IsGreat((a), (b))

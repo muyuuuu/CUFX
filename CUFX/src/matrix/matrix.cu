@@ -69,18 +69,18 @@ cudaError_t Matrix::MallocMem<T>() {
 
     cudaError_t ret = cudaMalloc((T **)&this->cuda_addr, this->GetBytes<T>());
     if ((nullptr == this->cuda_addr) || (cudaSuccess != ret)) {
-        ErrorHandleNoLabel(ret);
+        CUDA_CHECK(ret);
     } else {
         memset(this->host_addr, 0, this->GetBytes<T>());
         ret = cudaMemset(this->cuda_addr, 0, this->GetBytes<T>());
-        ErrorHandleNoLabel(ret);
+        CUDA_CHECK(ret);
 
         // 只有内存都创建成功时 才给 CPU 内存分配随机数
         if (cudaSuccess == ret) {
             RandomData<T>((T *)this->host_addr, this->height, this->width, this->channel);
 
             ret = cudaMemcpy(this->cuda_addr, this->host_addr, this->GetBytes<T>(), cudaMemcpyHostToDevice);
-            ErrorHandleNoLabel(ret);
+            CUDA_CHECK(ret);
         }
     }
 
@@ -98,7 +98,7 @@ cudaError_t Matrix::UVAAllocMem<T>() {
     }
 
     cudaError_t ret = cudaMallocManaged((void **)&this->host_addr, this->GetBytes<T>());
-    ErrorHandleNoLabel(ret);
+    CUDA_CHECK(ret);
     return ret;
 }
 

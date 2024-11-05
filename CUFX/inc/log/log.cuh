@@ -7,18 +7,11 @@
 
 void ErrorBackTrace(cudaError_t status_code, const char *file, int line_idx);
 
-#define ErrorHandleWithLabel(ret, label)                                                                               \
+#define CUDA_CHECK(ret)                                                                                                \
     do {                                                                                                               \
         if (cudaSuccess != ret) {                                                                                      \
             ErrorBackTrace(ret, __FILE__, __LINE__);                                                                   \
-            goto label;                                                                                                \
-        }                                                                                                              \
-    } while (0)
-
-#define ErrorHandleNoLabel(ret)                                                                                        \
-    do {                                                                                                               \
-        if (cudaSuccess != ret) {                                                                                      \
-            ErrorBackTrace(ret, __FILE__, __LINE__);                                                                   \
+            return ret;                                                                                                \
         }                                                                                                              \
     } while (0)
 
