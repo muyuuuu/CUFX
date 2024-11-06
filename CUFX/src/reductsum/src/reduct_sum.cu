@@ -36,7 +36,6 @@ __global__ void ReductSumKernel(const T_matrix *input, T1 *output, const int h, 
     }
 
     if (0 == tx && 0 == ty) {
-        printf("======= %.4f \n", local_arr[0]);
         output[blockIdx.x + blockIdx.y * gridDim.x] = local_arr[0];
     }
 

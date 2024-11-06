@@ -15,6 +15,13 @@ void ErrorBackTrace(cudaError_t status_code, const char *file, int line_idx);
         }                                                                                                              \
     } while (0)
 
+#define CUDA_CHECK_NO_RET(ret)                                                                                         \
+    do {                                                                                                               \
+        if (cudaSuccess != ret) {                                                                                      \
+            ErrorBackTrace(ret, __FILE__, __LINE__);                                                                   \
+        }                                                                                                              \
+    } while (0)
+
 typedef enum CpuLogLevel {
     CpuLogLevelInvalid = 1,
     CpuLogLevelInfo = 2,
