@@ -19,6 +19,7 @@ void ErrorBackTrace(cudaError_t status_code, const char *file, int line_idx);
     do {                                                                                                               \
         if (cudaSuccess != ret) {                                                                                      \
             ErrorBackTrace(ret, __FILE__, __LINE__);                                                                   \
+            return;                                                                                                    \
         }                                                                                                              \
     } while (0)
 

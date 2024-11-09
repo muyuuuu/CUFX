@@ -1,4 +1,5 @@
 #include "op_external.cuh"
+#include "clock.cuh"
 #include <memory>
 
 template <typename T>
@@ -61,8 +62,11 @@ cudaError_t ReductSumImpl(const Matrix &src, void *val) {
     ret = cudaMalloc((T1 **)&cuda_output, num_block_size * sizeof(T1));
     CUDA_CHECK(ret);
 
+    ProfileTime time{"ReduceSum"};
+    time.StartGpuTime();
     ReductSumKernel<T1, T_matrix><<<grid_size, block_size, local_width * local_height * sizeof(T1)>>>(
         src.GetCudaData<T_matrix>(), cuda_output, src.height, src.width * src.channel);
+    time.EndGpuTime();
 
     ret = cudaGetLastError();
     CUDA_CHECK(ret);

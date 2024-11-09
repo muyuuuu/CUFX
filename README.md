@@ -53,5 +53,6 @@ make install
 
 ## 参考
 
-1. https://www.cnblogs.com/moonzzz/p/17621574.html
-2. https://lulaoshi.info/gpu/python-cuda/streams.html
+1. 内存： https://www.cnblogs.com/moonzzz/p/17621574.html
+2. 多流： https://lulaoshi.info/gpu/python-cuda/streams.html
+3. 进阶，不适用初学者： https://github.com/PaddleJitLab/CUDATutorial/tree/develop
