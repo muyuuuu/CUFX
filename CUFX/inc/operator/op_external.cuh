@@ -7,4 +7,6 @@
 
 cudaError_t ReductSum(const Matrix &src, void *val);
 
+cudaError_t GEMM(const Matrix &src1, const Matrix &src2, const Matrix &dst);
+
 #endif

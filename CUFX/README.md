@@ -93,3 +93,13 @@ bash scripts/run.sh
         └── src
             └── test_impl.cpp
 ```
+
+# 小福利
+
+如果你也用 `fish` 终端，`cuda` 的环境配置为：
+
+```
+set -gx CUDA_HOME /usr/local/cuda
+set -gx LD_LIBRARY_PATH $CUDA_HOME/lib64
+set -gx PATH $CUDA_HOME/bin $PATH
+```
