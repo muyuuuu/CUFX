@@ -9,6 +9,8 @@ fi
 
 cd "$DIRECTORY"
 
+# rm -r *
+
 cmake ..
 
 make -j8
