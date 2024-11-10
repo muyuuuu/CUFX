@@ -4,7 +4,6 @@
 
 template <typename T>
 __device__ T *SharedMemoryProxy() {
-    // do we need an __align__() here? I don't think so...
     extern __shared__ unsigned char memory[];
     return reinterpret_cast<T *>(memory);
 }

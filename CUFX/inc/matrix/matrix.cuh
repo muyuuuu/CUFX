@@ -42,7 +42,14 @@ public:
 
     // 访问矩阵元素
     template <typename T>
-    T At(int h, int w, int c) const {
+    T &At(int h, int w, int c) {
+        CheckType<T>();
+        T *data = reinterpret_cast<T *>(host_addr);
+        return data[h * this->width * this->channel + this->channel * w + c];
+    }
+
+    template <typename T>
+    const T &At(int h, int w, int c) const {
         CheckType<T>();
         T *data = reinterpret_cast<T *>(host_addr);
         return data[h * this->width * this->channel + this->channel * w + c];
