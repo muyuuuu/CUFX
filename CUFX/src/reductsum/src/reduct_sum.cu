@@ -8,6 +8,16 @@ __device__ T *SharedMemoryProxy() {
     return reinterpret_cast<T *>(memory);
 }
 
+template <typename T>
+__device__ void warp_reduce(volatile T *sdata, int tid) {
+    sdata[tid] += sdata[tid + 32];
+    sdata[tid] += sdata[tid + 16];
+    sdata[tid] += sdata[tid + 8];
+    sdata[tid] += sdata[tid + 4];
+    sdata[tid] += sdata[tid + 2];
+    sdata[tid] += sdata[tid + 1];
+}
+
 template <typename T1, typename T_matrix>
 __global__ void ReductSumKernel(const T_matrix *input, T1 *output, const int h, const int w) {
     auto local_arr = SharedMemoryProxy<T1>();
@@ -16,23 +26,27 @@ __global__ void ReductSumKernel(const T_matrix *input, T1 *output, const int h, 
     const int ty = threadIdx.y;
 
     const int height = blockIdx.y * blockDim.y + ty;
-    const int width = blockIdx.x * blockDim.x + tx;
+    const int width = blockIdx.x * blockDim.x + tx * 2;
 
     // Load data into shared memory
     if (height < h && width < w) {
-        local_arr[ty * blockDim.x + tx] = input[height * w + width];
+        local_arr[ty * blockDim.x + tx] = input[height * w + width] + input[height * w + width + 1];
     } else {
         local_arr[ty * blockDim.x + tx] = 0;
     }
 
     __syncthreads();
 
-    for (int stride = blockDim.x * blockDim.y / 2; stride > 0; stride >>= 1) {
+    for (int stride = blockDim.x * blockDim.y / 2; stride > 32; stride >>= 1) {
         int idx = ty * blockDim.x + tx;
         if (idx < stride) {
             local_arr[idx] += local_arr[idx + stride];
         }
         __syncthreads();
+    }
+
+    if (ty * blockDim.x + tx < 32) {
+        warp_reduce(local_arr, ty * blockDim.x + tx);
     }
 
     if (0 == tx && 0 == ty) {
@@ -52,7 +66,8 @@ cudaError_t ReductSumImpl(const Matrix &src, void *val) {
     int local_height = 32;
     int local_width = 32;
 
-    dim3 grid_size((global_width + local_width - 1) / local_width, (global_height + local_height - 1) / local_height);
+    dim3 grid_size((global_width + local_width - 1) / local_width / 2,
+                   (global_height + local_height - 1) / local_height);
     dim3 block_size(local_width, local_height);
 
     int num_block_size = grid_size.x * grid_size.y;
