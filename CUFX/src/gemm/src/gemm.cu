@@ -10,14 +10,14 @@ __global__ void GemmKernel(T *src1, T *src2, T *dst, std::size_t h, std::size_t 
     const int height = blockIdx.y * blockDim.y + ty;
     const int width = blockIdx.x * blockDim.x + tx;
 
-    if (width >= k || height >= h) {
+    if (width >= w || height >= h) {
         return;
     }
 
     float sum = 0.0f;
 
     for (int i = 0; i < k; i++) {
-        sum += src1[height * k + width] * src2[w * k + width];
+        sum += src1[height * k + i] * src2[w * i + width];
     }
 
     dst[height * w + width] = sum;
@@ -34,7 +34,7 @@ cudaError_t GemmImpl(const Matrix &src1, const Matrix &src2, Matrix &dst) {
     int local_height = 32;
     int local_width = 32;
 
-    dim3 grid_size = GetGridSize(src1_width, src1_height, local_width, local_height);
+    dim3 grid_size = GetGridSize(dst.width, dst.height, local_width, local_height);
     dim3 block_size(local_width, local_height);
 
     ProfileTime time{"Gemm"};
@@ -45,6 +45,7 @@ cudaError_t GemmImpl(const Matrix &src1, const Matrix &src2, Matrix &dst) {
 
     CUDA_CHECK(cudaGetLastError());
     CUDA_CHECK(cudaDeviceSynchronize());
+    CUDA_CHECK(dst.SyncToHost<T>());
 
     return ret;
 }

@@ -72,3 +72,42 @@ for(int s = blockDim.x / 2; s > 0; s >>= 1) {
 ### 参考
 
 晚上下班时间少写的有点精简，具体的优化思路可以参考这里：https://github.com/PaddleJitLab/CUDATutorial/tree/develop/docs/09_optimize_reduce
+
+## GEMM
+
+矩阵类型为 float，大小如下：
+
+```c
+Matrix src1{ElemType::ElemFloat, {201, 456, 1}, MemoryType::GlobalMemory, IsAsync::IsAsyncFalse};
+Matrix src2{ElemType::ElemFloat, {456, 327, 1}, MemoryType::GlobalMemory, IsAsync::IsAsyncFalse};
+```
+
+C 实现为 12 ms。
+
+### 朴素实现 (0.14ms)
+
+```c
+template <typename T>
+__global__ void GemmKernel(T *src1, T *src2, T *dst, std::size_t h, std::size_t k, std::size_t w) {
+    const int tx = threadIdx.x;
+    const int ty = threadIdx.y;
+
+    const int height = blockIdx.y * blockDim.y + ty;
+    const int width = blockIdx.x * blockDim.x + tx;
+
+    if (width >= w || height >= h) {
+        return;
+    }
+
+    float sum = 0.0f;
+
+    for (int i = 0; i < k; i++) {
+        sum += src1[height * k + i] * src2[w * i + width];
+    }
+
+    dst[height * w + width] = sum;
+}
+```
+
+### 共享内存
+

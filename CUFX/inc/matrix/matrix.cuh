@@ -62,6 +62,12 @@ public:
         return data;
     }
 
+    // 内存同步
+    template <typename T>
+    cudaError_t SyncToHost() {
+        return cudaMemcpy(this->host_addr, this->cuda_addr, this->GetBytes<T>(), cudaMemcpyDeviceToHost);
+    }
+
     ~Matrix();
 
     // 创建矩阵

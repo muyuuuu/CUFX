@@ -26,27 +26,26 @@ int CompareMatrix(const Matrix &src1, const Matrix &src2) {
 template <>
 int CompareMatrix<float>(const Matrix &src1, const Matrix &src2) {
     if (src1.GetBytes<float>() != src2.GetBytes<float>()) {
-        LOG(CpuLogLevelError, "matrix size not equal");
+        LOGE("matrix size not equal");
         return -1;
     }
 
-    bool flag = true;
+    if (src1.height != src2.height || src1.width != src2.width) {
+        LOGE("matrix size not equal");
+        return -1;
+    }
 
     for (std::size_t i = 0; i < src1.height; i++) {
         for (std::size_t j = 0; j < src1.width; j++) {
             float v1 = src1.At<float>(i, j, 0);
             float v2 = src2.At<float>(i, j, 0);
-            if (std::fabs(v1 - v1) < 1e-6) {
-                flag = false;
-                break;
+            if (std::fabs(v1 - v2) > 1e-4) {
+                LOGE("mis at (h, w, c) (%zu %zu %d) v1 = %.4f v2 = %.4f, early return.\n", i, j, 1, v1, v2);
+                return -1;
             }
         }
     }
 
-    if (flag) {
-        LOG(CpuLogLevelInfo, " Compare Success \n");
-    } else {
-        LOG(CpuLogLevelInfo, " Compare Failed \n");
-    }
+    LOG(CpuLogLevelInfo, " Compare Success \n");
     return 0;
 }
