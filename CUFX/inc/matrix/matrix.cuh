@@ -50,6 +50,9 @@ public:
 
     template <typename T>
     const T &At(int h, int w, int c) const {
+        if (h >= height && w >= width) {
+            LOGE("memory out of range ! %d %d %d %d\n", h, height, w, width);
+        }
         CheckType<T>();
         T *data = reinterpret_cast<T *>(host_addr);
         return data[h * this->width * this->channel + this->channel * w + c];

@@ -78,13 +78,13 @@ for(int s = blockDim.x / 2; s > 0; s >>= 1) {
 矩阵类型为 float，大小如下：
 
 ```c
-Matrix src1{ElemType::ElemFloat, {201, 456, 1}, MemoryType::GlobalMemory, IsAsync::IsAsyncFalse};
-Matrix src2{ElemType::ElemFloat, {456, 327, 1}, MemoryType::GlobalMemory, IsAsync::IsAsyncFalse};
+Matrix src1{ElemType::ElemFloat, {256, 512, 1}, MemoryType::GlobalMemory, IsAsync::IsAsyncFalse};
+Matrix src2{ElemType::ElemFloat, {512, 256, 1}, MemoryType::GlobalMemory, IsAsync::IsAsyncFalse};
 ```
 
-C 实现为 12 ms。
+C 实现为 40 ms。
 
-### 朴素实现 (0.14ms)
+### 朴素实现 (0.1ms)
 
 ```c
 template <typename T>
@@ -109,5 +109,5 @@ __global__ void GemmKernel(T *src1, T *src2, T *dst, std::size_t h, std::size_t 
 }
 ```
 
-### 共享内存
+### 共享内存 ()
 
