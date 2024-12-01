@@ -50,6 +50,9 @@ public:
 
     template <typename T>
     const T &At(int h, int w, int c) const {
+        if (h >= height && w >= width) {
+            LOGE("memory out of range ! %d %d %d %d\n", h, height, w, width);
+        }
         CheckType<T>();
         T *data = reinterpret_cast<T *>(host_addr);
         return data[h * this->width * this->channel + this->channel * w + c];
@@ -60,6 +63,12 @@ public:
         CheckType<T>();
         T *data = reinterpret_cast<T *>(cuda_addr);
         return data;
+    }
+
+    // 内存同步
+    template <typename T>
+    cudaError_t SyncToHost() {
+        return cudaMemcpy(this->host_addr, this->cuda_addr, this->GetBytes<T>(), cudaMemcpyDeviceToHost);
     }
 
     ~Matrix();
