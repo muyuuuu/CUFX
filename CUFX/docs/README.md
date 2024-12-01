@@ -78,13 +78,13 @@ for(int s = blockDim.x / 2; s > 0; s >>= 1) {
 矩阵类型为 float，大小如下：
 
 ```c
-Matrix src1{ElemType::ElemFloat, {256, 512, 1}, MemoryType::GlobalMemory, IsAsync::IsAsyncFalse};
-Matrix src2{ElemType::ElemFloat, {512, 256, 1}, MemoryType::GlobalMemory, IsAsync::IsAsyncFalse};
+Matrix src1{ElemType::ElemFloat, {512, 1024, 1}, MemoryType::GlobalMemory, IsAsync::IsAsyncFalse};
+Matrix src2{ElemType::ElemFloat, {1024, 512, 1}, MemoryType::GlobalMemory, IsAsync::IsAsyncFalse};
 ```
 
-C 实现为 40 ms。
+C 实现为 640 ms。
 
-### 朴素实现 (0.1ms)
+### 朴素实现 (0.44ms)
 
 ```c
 template <typename T>
@@ -109,5 +109,18 @@ __global__ void GemmKernel(T *src1, T *src2, T *dst, std::size_t h, std::size_t 
 }
 ```
 
-### 共享内存 ()
+### 共享内存 (0.32ms)
 
+一般来说，使用共享内存后总的内存访问次数会减少，特别是对全局内存的访问次数会显著减少。共享内存缓存了一部分数据，使得多个线程可以重复使用这些缓存的数据，而不需要每次都从全局内存重新加载，我不太清楚你是如何推出他们访问全局内存的次数是一样的
+
+矩阵乘法（GEMM）中，计算过程中对每个数据块（如A矩阵的一行或B矩阵的一列）会多次访问。如果直接从全局内存读取，每次使用这些数据都需要重新从全局内存中加载。使用共享内存后，这些数据被加载到共享内存中，之后可以在共享内存中被多个线程重复使用，从而减少对全局内存的访问。
+
+假设 src1[M, K], src2[K, N]。
+
+- 错误版本：如果计算得到 [M, N] 的矩阵，对于 dst 矩阵的每个点，都需要读 src1 的一行和 src2 的一列，所以不管是否使用共享内存优化， IO 量是一样的。
+
+- 正确版本，根据 kernel 函数算 IO 次数，乘以 block 的大小，在乘以每个 block 内线程的数量，动态内存的访问忽略不记的话，的确比朴素实现的 IO 少很多。
+
+### 一维优化 (0.2ms)
+
+### 二维优化
