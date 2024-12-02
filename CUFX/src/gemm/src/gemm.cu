@@ -23,6 +23,40 @@ __global__ void GemmKernel(T *src1, T *src2, T *dst, std::size_t h, std::size_t 
     dst[height * w + width] = sum;
 }
 
+// block_size 32
+template <typename T, int block_size>
+__global__ void GemmSharedMemKernel(T *src1, T *src2, T *dst, std::size_t h, std::size_t k, std::size_t w) {
+    __shared__ T local_src1[block_size * block_size];
+    __shared__ T local_src2[block_size * block_size];
+
+    const uint block_idx = blockIdx.x;
+    const uint block_idy = blockIdx.y;
+
+    const int thread_idx = threadIdx.x; // % block_size;
+    const int thread_idy = threadIdx.y; // / block_size;
+
+    src1 += block_idy * k * block_size;
+    src2 += block_idx * block_size;
+    dst += (block_size * block_idx + block_size * block_idy * w);
+
+    float sum = 0.0f;
+
+    for (int i = 0; i < k; i += block_size) {
+        local_src1[thread_idy * block_size + thread_idx] = src1[thread_idy * k + thread_idx];
+        local_src2[thread_idy * block_size + thread_idx] = src2[thread_idy * w + thread_idx];
+        __syncthreads();
+
+        for (int j = 0; j < block_size; j++) {
+            sum += local_src1[thread_idy * block_size + j] * local_src2[j * block_size + thread_idx];
+        }
+        __syncthreads();
+
+        src1 += block_size;
+        src2 += w * block_size;
+    }
+    dst[thread_idy * w + thread_idx] = sum;
+}
+
 template <typename T, int bm, int bn, int bk, int tm>
 __global__ void GemmSharedMem1DKernel(T *src1, T *src2, T *dst, std::size_t h, std::size_t k, std::size_t w) {
     __shared__ T local_src1[bm * bk];
@@ -81,38 +115,73 @@ __global__ void GemmSharedMem1DKernel(T *src1, T *src2, T *dst, std::size_t h, s
     return;
 }
 
-// block_size 32
-template <typename T, int block_size>
-__global__ void GemmSharedMemKernel(T *src1, T *src2, T *dst, std::size_t h, std::size_t k, std::size_t w) {
-    __shared__ T local_src1[block_size * block_size];
-    __shared__ T local_src2[block_size * block_size];
+template <typename T, int bm, int bn, int bk, int tm, int tn>
+__global__ void GemmSharedMem2DKernel(T *src1, T *src2, T *dst, std::size_t h, std::size_t k, std::size_t w) {
+    __shared__ T local_src1[bm * bk];
+    __shared__ T local_src2[bk * bn];
 
     const uint block_idx = blockIdx.x;
     const uint block_idy = blockIdx.y;
 
-    const int thread_idx = threadIdx.x; // % block_size;
-    const int thread_idy = threadIdx.y; // / block_size;
+    const int thread_idx = threadIdx.x % (bn / tn);
+    const int thread_idy = threadIdx.x / (bn / tn);
 
-    src1 += block_idy * k * block_size;
-    src2 += block_idx * block_size;
-    dst += (block_size * block_idx + block_size * block_idy * w);
+    // int number_threads_block_tile = (bm * bn) / (tm * tn);
+    // const uint stride_src2 = number_threads_block_tile / bn;
 
-    float sum = 0.0f;
+    src1 += block_idy * k * bm;
+    src2 += block_idx * bn;
+    dst += (bm * block_idy * w + bn * block_idx);
 
-    for (int i = 0; i < k; i += block_size) {
-        local_src1[thread_idy * block_size + thread_idx] = src1[thread_idy * k + thread_idx];
-        local_src2[thread_idy * block_size + thread_idx] = src2[thread_idy * w + thread_idx];
-        __syncthreads();
+    int global_src1 = block_idy * bm * k;
+    int global_src2 = bn * block_idx;
 
-        for (int j = 0; j < block_size; j++) {
-            sum += local_src1[thread_idy * block_size + j] * local_src2[j * block_size + thread_idx];
+    int src1_inner_row = threadIdx.x / bk;
+    int src1_inner_col = threadIdx.x % bk;
+    int src2_inner_row = threadIdx.x / bn;
+    int src2_inner_col = threadIdx.x % bn;
+
+    float thread_res[tm * tn] = {0.0f};
+
+    for (int bk_idx = 0; bk_idx < k; bk_idx += bk) {
+        for (uint load_offset = 0; load_offset < bm / tm; load_offset++) {
+            local_src1[(src1_inner_row + load_offset * tm) * bk + src1_inner_col] =
+                src1[(src1_inner_row + load_offset * tm) * k + src1_inner_col];
         }
+
+        for (uint load_offset = 0; load_offset < bk; load_offset++) {
+            local_src2[(src2_inner_row + load_offset) * bn + src2_inner_col] =
+                src2[(src2_inner_row + load_offset) * w + src2_inner_col];
+        }
+
         __syncthreads();
 
-        src1 += block_size;
-        src2 += w * block_size;
+        src1 += bk;
+        src2 += bk * w;
+        global_src1 += bk;
+        global_src2 += bk * w;
+
+        for (int idx = 0; idx < bk; idx++) {
+            for (int tm_idx = 0; tm_idx < tm; tm_idx++) {
+                float val = local_src1[(thread_idy * tm + tm_idx) * bk + idx];
+                for (int tn_idx = 0; tn_idx < tn; tn_idx++) {
+                    thread_res[tm_idx * tn + tn_idx] += val * local_src2[idx * bn + thread_idx * tn + tn_idx];
+                }
+            }
+        }
+
+        __syncthreads();
     }
-    dst[thread_idy * w + thread_idx] = sum;
+
+    for (int tm_idx = 0; tm_idx < tm; tm_idx++) {
+        for (int tn_idx = 0; tn_idx < tn; tn_idx++) {
+            if (block_idy * bm + thread_idy * tm + tm_idx < h && block_idx * bn + thread_idx * tn + tn_idx < w) {
+                dst[(thread_idy * tm + tm_idx) * w + thread_idx * tn + tn_idx] = thread_res[tm_idx * tn + tn_idx];
+            }
+        }
+    }
+
+    return;
 }
 
 template <typename T>
@@ -123,42 +192,55 @@ cudaError_t GemmImpl(const Matrix &src1, const Matrix &src2, Matrix &dst) {
     int src1_width = src1.width;
     int src2_width = src2.width;
 
-    const int local_height = 32;
-    const int local_width = 32;
-
     // dim3 grid_size = GetGridSize(dst.width, dst.height, local_width, local_height);
     // dim3 block_size(local_width, local_height);
 
     ProfileTime time{"Gemm"};
     time.StartGpuTime();
 
-    // {
-    //     dim3 grid_size = GetGridSize(dst.width, dst.height, local_width, local_height);
-    //     dim3 block_size(local_width, local_height);
-
-    //     GemmKernel<T><<<grid_size, block_size>>>(src1.GetCudaData<T>(), src2.GetCudaData<T>(), dst.GetCudaData<T>(),
-    //                                              src1_height, src1_width, src2_width);
-
-    //     GemmSharedMemKernel<T, local_height><<<grid_size, block_size>>>(
-    //         src1.GetCudaData<T>(), src2.GetCudaData<T>(), dst.GetCudaData<T>(), src1_height, src1_width, src2_width);
-    // }
-
-    // block 1D
     {
-        const int block_m = 64;
-        const int block_n = 64;
-        const int block_k = 8;
-        const int per_elem_thread = 8;
+        const int local_height = 32;
+        const int local_width = 32;
+        dim3 grid_size = GetGridSize(dst.width, dst.height, local_width, local_height);
+        dim3 block_size(local_width, local_height);
 
-        dim3 grid_size = GetGridSize(dst.width, dst.height, block_n, block_m);
-        dim3 block_size(block_n * block_m / per_elem_thread);
+        // GemmKernel<T><<<grid_size, block_size>>>(src1.GetCudaData<T>(), src2.GetCudaData<T>(), dst.GetCudaData<T>(),
+        //                                          src1_height, src1_width, src2_width);
 
-        GemmSharedMem1DKernel<T, block_m, block_n, block_k, per_elem_thread><<<grid_size, block_size>>>(
+        GemmSharedMemKernel<T, local_height><<<grid_size, block_size>>>(
             src1.GetCudaData<T>(), src2.GetCudaData<T>(), dst.GetCudaData<T>(), src1_height, src1_width, src2_width);
     }
 
-    dim3 grid_size = GetGridSize(dst.width, dst.height, local_width, local_height);
-    dim3 block_size(local_width, local_height);
+    // block 1D
+    // {
+    //     const int block_m = 64;
+    //     const int block_n = 64;
+    //     const int block_k = 8;
+    //     const int per_elem_thread = 8;
+
+    //     dim3 grid_size = GetGridSize(dst.width, dst.height, block_n, block_m);
+    //     dim3 block_size(block_n * block_m / per_elem_thread);
+
+    //     GemmSharedMem1DKernel<T, block_m, block_n, block_k, per_elem_thread><<<grid_size, block_size>>>(
+    //         src1.GetCudaData<T>(), src2.GetCudaData<T>(), dst.GetCudaData<T>(), src1_height, src1_width, src2_width);
+    // }
+
+    // block 2D
+    // {
+    //     const int block_m = 64;
+    //     const int block_n = 64;
+    //     const int block_k = 8;
+    //     const int per_elem_thread_x = 8;
+    //     const int per_elem_thread_y = 8;
+
+    //     dim3 grid_size = GetGridSize(dst.width, dst.height, block_n, block_m);
+    //     dim3 block_size(block_n * block_m / per_elem_thread_x / per_elem_thread_y);
+
+    //     GemmSharedMem2DKernel<T, block_m, block_n, block_k, per_elem_thread_x, per_elem_thread_y>
+    //         <<<grid_size, block_size>>>(src1.GetCudaData<T>(), src2.GetCudaData<T>(), dst.GetCudaData<T>(),
+    //         src1_height,
+    //                                     src1_width, src2_width);
+    // }
 
     // GemmSharedMemKernel<T, local_height><<<grid_size, block_size>>>(
     //     src1.GetCudaData<T>(), src2.GetCudaData<T>(), dst.GetCudaData<T>(), src1_height, src1_width, src2_width);

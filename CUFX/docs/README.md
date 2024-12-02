@@ -78,13 +78,13 @@ for(int s = blockDim.x / 2; s > 0; s >>= 1) {
 矩阵类型为 float，大小如下：
 
 ```c
-Matrix src1{ElemType::ElemFloat, {512, 1024, 1}, MemoryType::GlobalMemory, IsAsync::IsAsyncFalse};
-Matrix src2{ElemType::ElemFloat, {1024, 512, 1}, MemoryType::GlobalMemory, IsAsync::IsAsyncFalse};
+Matrix src1{ElemType::ElemFloat, {2048, 1024, 1}, MemoryType::GlobalMemory, IsAsync::IsAsyncFalse};
+Matrix src2{ElemType::ElemFloat, {1024, 2048, 1}, MemoryType::GlobalMemory, IsAsync::IsAsyncFalse};
 ```
 
 C 实现为 640 ms。
 
-### 朴素实现 (0.44ms)
+### 朴素实现 (5.2 ms)
 
 ```c
 template <typename T>
@@ -109,7 +109,7 @@ __global__ void GemmKernel(T *src1, T *src2, T *dst, std::size_t h, std::size_t 
 }
 ```
 
-### 共享内存 (0.32ms)
+### 共享内存 (3.7 ms)
 
 一般来说，使用共享内存后总的内存访问次数会减少，特别是对全局内存的访问次数会显著减少。共享内存缓存了一部分数据，使得多个线程可以重复使用这些缓存的数据，而不需要每次都从全局内存重新加载，我不太清楚你是如何推出他们访问全局内存的次数是一样的
 
@@ -121,6 +121,6 @@ __global__ void GemmKernel(T *src1, T *src2, T *dst, std::size_t h, std::size_t 
 
 - 正确版本，根据 kernel 函数算 IO 次数，乘以 block 的大小，在乘以每个 block 内线程的数量，动态内存的访问忽略不记的话，的确比朴素实现的 IO 少很多。
 
-### 一维优化 (0.2ms)
+### 一维优化 (1.3 ms)
 
-### 二维优化
+### 二维优化 (0.9 ms)
