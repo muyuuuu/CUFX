@@ -25,11 +25,15 @@ int GemmCRun(const Matrix &src1, const Matrix &src2, Matrix &dst) {
 }
 
 TestCase(CudaOp, GemmFloat) {
-    Matrix src1{ElemType::ElemFloat, {512, 1024, 1}, MemoryType::GlobalMemory, IsAsync::IsAsyncFalse};
-    Matrix src2{ElemType::ElemFloat, {1024, 512, 1}, MemoryType::GlobalMemory, IsAsync::IsAsyncFalse};
+    const int dim_h = 2048;
+    const int dim_k = 1024;
+    const int dim_w = 2048;
 
-    Matrix dst1{ElemType::ElemFloat, {512, 512, 1}, MemoryType::GlobalMemory, IsAsync::IsAsyncFalse};
-    Matrix dst2{ElemType::ElemFloat, {512, 512, 1}, MemoryType::GlobalMemory, IsAsync::IsAsyncFalse};
+    Matrix src1{ElemType::ElemFloat, {dim_h, dim_k, 1}, MemoryType::GlobalMemory, IsAsync::IsAsyncFalse};
+    Matrix src2{ElemType::ElemFloat, {dim_k, dim_w, 1}, MemoryType::GlobalMemory, IsAsync::IsAsyncFalse};
+
+    Matrix dst1{ElemType::ElemFloat, {dim_h, dim_w, 1}, MemoryType::GlobalMemory, IsAsync::IsAsyncFalse};
+    Matrix dst2{ElemType::ElemFloat, {dim_h, dim_w, 1}, MemoryType::GlobalMemory, IsAsync::IsAsyncFalse};
     CUDA_CHECK_NO_RET(src1.MatrixCreate());
     CUDA_CHECK_NO_RET(src2.MatrixCreate());
     CUDA_CHECK_NO_RET(dst1.MatrixCreate());
