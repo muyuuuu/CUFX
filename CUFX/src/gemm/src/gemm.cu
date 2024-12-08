@@ -2,6 +2,8 @@
 #include "clock.cuh"
 #include "runtime_info.cuh"
 
+#define FETCH_FLOAT4(pointer) (reinterpret_cast<float4 *>(&(pointer))[0])
+
 template <typename T>
 __global__ void GemmKernel(T *src1, T *src2, T *dst, std::size_t h, std::size_t k, std::size_t w) {
     const int tx = threadIdx.x;
@@ -116,7 +118,8 @@ __global__ void GemmSharedMem1DKernel(T *src1, T *src2, T *dst, std::size_t h, s
 }
 
 template <typename T, int bm, int bn, int bk, int tm, int tn>
-__global__ void GemmSharedMem2DKernel(T *src1, T *src2, T *dst, std::size_t h, std::size_t k, std::size_t w) {
+__global__ void __launch_bounds__((bm * bn) / (tm * tn), 1)
+    GemmSharedMem2DKernel(T *src1, T *src2, T *dst, std::size_t h, std::size_t k, std::size_t w) {
     __shared__ T local_src1[bm * bk];
     __shared__ T local_src2[bk * bn];
 
@@ -125,9 +128,6 @@ __global__ void GemmSharedMem2DKernel(T *src1, T *src2, T *dst, std::size_t h, s
 
     const int thread_idx = threadIdx.x % (bn / tn);
     const int thread_idy = threadIdx.x / (bn / tn);
-
-    // int number_threads_block_tile = (bm * bn) / (tm * tn);
-    // const uint stride_src2 = number_threads_block_tile / bn;
 
     src1 += block_idy * k * bm;
     src2 += block_idx * bn;
@@ -184,6 +184,83 @@ __global__ void GemmSharedMem2DKernel(T *src1, T *src2, T *dst, std::size_t h, s
     return;
 }
 
+template <typename T, int bm, int bn, int bk, int tm, int tn>
+__global__ void GemmSharedMem2DVecKernel(T *src1, T *src2, T *dst, std::size_t h, std::size_t k, std::size_t w) {
+    __shared__ T local_src1[bm * bk];
+    __shared__ T local_src2[bk * bn];
+
+    const uint block_idy = blockIdx.y;
+    const uint block_idx = blockIdx.x;
+
+    const int thread_idx = threadIdx.x % (bn / tn);
+    const int thread_idy = threadIdx.x / (bn / tn);
+
+    src1 += block_idy * k * bm;
+    src2 += block_idx * bn;
+    dst += (bm * block_idy * w + bn * block_idx);
+
+    int src1_inner_row = threadIdx.x / (bk / 4);
+    int src1_inner_col = threadIdx.x % (bk / 4);
+    int src2_inner_row = threadIdx.x / (bn / 4);
+    int src2_inner_col = threadIdx.x % (bn / 4);
+
+    float thread_res[tm * tn] = {0.0f};
+
+    // save transpose
+    float src1_transpose[4] = {0.f};
+
+    // save tm and tn
+    float reg_src1[tm];
+    float reg_src2[tn];
+
+    for (int bk_idx = 0; bk_idx < k; bk_idx += bk) {
+        for (uint load_offset = 0; load_offset < bm / tm; load_offset += 4) {
+            FETCH_FLOAT4(src1_transpose) =
+                FETCH_FLOAT4(src1[(src1_inner_row + load_offset * tm) * k + 4 * src1_inner_col]);
+            local_src1[src1_inner_row + tm * load_offset + bm * (4 * src1_inner_col + 0)] = src1_transpose[0];
+            local_src1[src1_inner_row + tm * load_offset + bm * (4 * src1_inner_col + 1)] = src1_transpose[1];
+            local_src1[src1_inner_row + tm * load_offset + bm * (4 * src1_inner_col + 2)] = src1_transpose[2];
+            local_src1[src1_inner_row + tm * load_offset + bm * (4 * src1_inner_col + 3)] = src1_transpose[3];
+        }
+
+        for (uint load_offset = 0; load_offset < bk; load_offset += 4) {
+            FETCH_FLOAT4(local_src2[(src2_inner_row + load_offset) * bn + 4 * src2_inner_col]) =
+                FETCH_FLOAT4(src2[(src2_inner_row + load_offset) * w + 4 * src2_inner_col]);
+        }
+
+        __syncthreads();
+
+        src1 += bk;
+        src2 += bk * w;
+
+        for (int idx = 0; idx < bk; idx++) {
+            for (int i = 0; i < tm; i += 4) {
+                FETCH_FLOAT4(reg_src1[i]) = FETCH_FLOAT4(local_src1[bm * idx + thread_idy * tm + i]);
+            }
+
+            for (int i = 0; i < tn; i += 4) {
+                FETCH_FLOAT4(reg_src2[i]) = FETCH_FLOAT4(local_src2[bn * idx + thread_idx * tn + i]);
+            }
+
+            for (int m = 0; m < tm; m++) {
+                for (int n = 0; n < tn; n++) {
+                    thread_res[m * tn + n] += reg_src1[m] * reg_src2[n];
+                }
+            }
+        }
+
+        __syncthreads();
+    }
+
+    for (int m = 0; m < tm; m++) {
+        for (int n = 0; n < tn; n += 4) {
+            FETCH_FLOAT4(dst[(thread_idy * tm + m) * w + thread_idx * tn + n]) = FETCH_FLOAT4(thread_res[m * tn + n]);
+        }
+    }
+
+    return;
+}
+
 template <typename T>
 cudaError_t GemmImpl(const Matrix &src1, const Matrix &src2, Matrix &dst) {
     cudaError_t ret = cudaSuccess;
@@ -198,18 +275,19 @@ cudaError_t GemmImpl(const Matrix &src1, const Matrix &src2, Matrix &dst) {
     ProfileTime time{"Gemm"};
     time.StartGpuTime();
 
-    {
-        const int local_height = 32;
-        const int local_width = 32;
-        dim3 grid_size = GetGridSize(dst.width, dst.height, local_width, local_height);
-        dim3 block_size(local_width, local_height);
+    // {
+    //     const int local_height = 32;
+    //     const int local_width = 32;
+    //     dim3 grid_size = GetGridSize(dst.width, dst.height, local_width, local_height);
+    //     dim3 block_size(local_width, local_height);
 
-        // GemmKernel<T><<<grid_size, block_size>>>(src1.GetCudaData<T>(), src2.GetCudaData<T>(), dst.GetCudaData<T>(),
-        //                                          src1_height, src1_width, src2_width);
+    //     // GemmKernel<T><<<grid_size, block_size>>>(src1.GetCudaData<T>(), src2.GetCudaData<T>(),
+    //     dst.GetCudaData<T>(),
+    //     //                                          src1_height, src1_width, src2_width);
 
-        GemmSharedMemKernel<T, local_height><<<grid_size, block_size>>>(
-            src1.GetCudaData<T>(), src2.GetCudaData<T>(), dst.GetCudaData<T>(), src1_height, src1_width, src2_width);
-    }
+    //     GemmSharedMemKernel<T, local_height><<<grid_size, block_size>>>(
+    //         src1.GetCudaData<T>(), src2.GetCudaData<T>(), dst.GetCudaData<T>(), src1_height, src1_width, src2_width);
+    // }
 
     // block 1D
     // {
@@ -242,8 +320,21 @@ cudaError_t GemmImpl(const Matrix &src1, const Matrix &src2, Matrix &dst) {
     //                                     src1_width, src2_width);
     // }
 
-    // GemmSharedMemKernel<T, local_height><<<grid_size, block_size>>>(
-    //     src1.GetCudaData<T>(), src2.GetCudaData<T>(), dst.GetCudaData<T>(), src1_height, src1_width, src2_width);
+    // block 2D vec
+    {
+        const int block_m = 64;
+        const int block_n = 64;
+        const int block_k = 8;
+        const int per_elem_thread_x = 8;
+        const int per_elem_thread_y = 8;
+
+        dim3 grid_size = GetGridSize(dst.width, dst.height, block_n, block_m);
+        dim3 block_size(block_n * block_m / per_elem_thread_x / per_elem_thread_y);
+
+        GemmSharedMem2DVecKernel<T, block_m, block_n, block_k, per_elem_thread_x, per_elem_thread_y>
+            <<<grid_size, block_size>>>(src1.GetCudaData<T>(), src2.GetCudaData<T>(), dst.GetCudaData<T>(), src1_height,
+                                        src1_width, src2_width);
+    }
 
     time.EndGpuTime();
 
