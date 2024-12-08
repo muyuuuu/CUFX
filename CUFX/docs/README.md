@@ -125,4 +125,8 @@ __global__ void GemmKernel(T *src1, T *src2, T *dst, std::size_t h, std::size_t 
 
 ### 二维优化 (0.9 ms)
 
-### 向量化访存 (0.9 ms)
+### 向量化访存 (0.7 ms)
+
+### warp 展开
+
+### 双缓冲

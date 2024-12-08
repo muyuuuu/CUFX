@@ -11,7 +11,7 @@ inline dim3 GetGridSize(const int width, const int height, const int block_width
 }
 
 __device__ inline float4 ReadFloat4(void *pointer) {
-    return reinterpret_cast<float4 *>(pointer)[0];
+    return *reinterpret_cast<float4 *>(pointer);
 }
 
 __device__ inline int GetOffset(int r, int w, int c) {

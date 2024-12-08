@@ -2,6 +2,8 @@
 #include "clock.cuh"
 #include "runtime_info.cuh"
 
+#define FETCH_FLOAT4(pointer) (reinterpret_cast<float4 *>(&(pointer))[0])
+
 template <typename T>
 __global__ void GemmKernel(T *src1, T *src2, T *dst, std::size_t h, std::size_t k, std::size_t w) {
     const int tx = threadIdx.x;
@@ -187,8 +189,8 @@ __global__ void GemmSharedMem2DVecKernel(T *src1, T *src2, T *dst, std::size_t h
     __shared__ T local_src1[bm * bk];
     __shared__ T local_src2[bk * bn];
 
-    const uint block_idx = blockIdx.x;
     const uint block_idy = blockIdx.y;
+    const uint block_idx = blockIdx.x;
 
     const int thread_idx = threadIdx.x % (bn / tn);
     const int thread_idy = threadIdx.x / (bn / tn);
@@ -197,9 +199,9 @@ __global__ void GemmSharedMem2DVecKernel(T *src1, T *src2, T *dst, std::size_t h
     src2 += block_idx * bn;
     dst += (bm * block_idy * w + bn * block_idx);
 
-    int src1_inner_row = threadIdx.x / bk;
+    int src1_inner_row = threadIdx.x / (bk / 4);
     int src1_inner_col = threadIdx.x % (bk / 4);
-    int src2_inner_row = threadIdx.x / bn;
+    int src2_inner_row = threadIdx.x / (bn / 4);
     int src2_inner_col = threadIdx.x % (bn / 4);
 
     float thread_res[tm * tn] = {0.0f};
@@ -212,18 +214,18 @@ __global__ void GemmSharedMem2DVecKernel(T *src1, T *src2, T *dst, std::size_t h
     float reg_src2[tn];
 
     for (int bk_idx = 0; bk_idx < k; bk_idx += bk) {
-        for (uint load_offset = 0; load_offset < bm / tm; load_offset++) {
-            ReadFloat4(&src1_transpose[0]) =
-                ReadFloat4(&src1[(src1_inner_row + load_offset * tm) * k + src1_inner_col * 4]);
-            local_src1[src1_inner_row * tm + load_offset + bm * (4 * src1_inner_col + 0)] = src1_transpose[0];
-            local_src1[src1_inner_row * tm + load_offset + bm * (4 * src1_inner_col + 1)] = src1_transpose[1];
-            local_src1[src1_inner_row * tm + load_offset + bm * (4 * src1_inner_col + 2)] = src1_transpose[2];
-            local_src1[src1_inner_row * tm + load_offset + bm * (4 * src1_inner_col + 3)] = src1_transpose[3];
+        for (uint load_offset = 0; load_offset < bm / tm; load_offset += 4) {
+            FETCH_FLOAT4(src1_transpose) =
+                FETCH_FLOAT4(src1[(src1_inner_row + load_offset * tm) * k + 4 * src1_inner_col]);
+            local_src1[src1_inner_row + tm * load_offset + bm * (4 * src1_inner_col + 0)] = src1_transpose[0];
+            local_src1[src1_inner_row + tm * load_offset + bm * (4 * src1_inner_col + 1)] = src1_transpose[1];
+            local_src1[src1_inner_row + tm * load_offset + bm * (4 * src1_inner_col + 2)] = src1_transpose[2];
+            local_src1[src1_inner_row + tm * load_offset + bm * (4 * src1_inner_col + 3)] = src1_transpose[3];
         }
 
-        for (uint load_offset = 0; load_offset < bk; load_offset++) {
-            ReadFloat4(&local_src2[(src2_inner_row + load_offset) * bn + src2_inner_col * 4]) =
-                ReadFloat4(&src2[(src2_inner_row + load_offset) * w + src2_inner_col * 4]);
+        for (uint load_offset = 0; load_offset < bk; load_offset += 4) {
+            FETCH_FLOAT4(local_src2[(src2_inner_row + load_offset) * bn + 4 * src2_inner_col]) =
+                FETCH_FLOAT4(src2[(src2_inner_row + load_offset) * w + 4 * src2_inner_col]);
         }
 
         __syncthreads();
@@ -233,11 +235,11 @@ __global__ void GemmSharedMem2DVecKernel(T *src1, T *src2, T *dst, std::size_t h
 
         for (int idx = 0; idx < bk; idx++) {
             for (int i = 0; i < tm; i += 4) {
-                ReadFloat4(&reg_src1[i]) = ReadFloat4(&local_src1[bm * idx + thread_idy * tm + i]);
+                FETCH_FLOAT4(reg_src1[i]) = FETCH_FLOAT4(local_src1[bm * idx + thread_idy * tm + i]);
             }
 
             for (int i = 0; i < tn; i += 4) {
-                ReadFloat4(&reg_src2[i]) = ReadFloat4(&local_src2[bn * idx + thread_idx * tn + i]);
+                FETCH_FLOAT4(reg_src2[i]) = FETCH_FLOAT4(local_src2[bn * idx + thread_idx * tn + i]);
             }
 
             for (int m = 0; m < tm; m++) {
@@ -252,7 +254,7 @@ __global__ void GemmSharedMem2DVecKernel(T *src1, T *src2, T *dst, std::size_t h
 
     for (int m = 0; m < tm; m++) {
         for (int n = 0; n < tn; n += 4) {
-            ReadFloat4(&dst[(thread_idy * tm + m) * w + thread_idx * tn + n]) = ReadFloat4(&thread_res[m * tn + n]);
+            FETCH_FLOAT4(dst[(thread_idy * tm + m) * w + thread_idx * tn + n]) = FETCH_FLOAT4(thread_res[m * tn + n]);
         }
     }
 
