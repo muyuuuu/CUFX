@@ -20,7 +20,7 @@ public:
 
     void StartGpuTime();
 
-    void EndGpuTime();
+    void EndGpuTime(int epoch = 1);
 
     ~ProfileTime();
 
