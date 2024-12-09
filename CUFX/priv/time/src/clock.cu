@@ -18,12 +18,12 @@ void ProfileTime::StartGpuTime() {
     CUDA_CHECK_NO_RET(cudaEventRecord(m_gpu_start, 0));
 }
 
-void ProfileTime::EndGpuTime() {
+void ProfileTime::EndGpuTime(int epoch) {
     CUDA_CHECK_NO_RET(cudaEventRecord(m_gpu_end, 0));
     CUDA_CHECK_NO_RET(cudaGetLastError());
     CUDA_CHECK_NO_RET(cudaEventSynchronize(m_gpu_end));
     CUDA_CHECK_NO_RET(cudaEventElapsedTime(&m_gpu_time, m_gpu_start, m_gpu_end));
-    LOGI("%s [GPU] cost %.4f ms\n", m_tag.c_str(), m_gpu_time);
+    LOGI("%s [GPU] cost %.4f ms\n", m_tag.c_str(), m_gpu_time / epoch);
 }
 
 ProfileTime::~ProfileTime() {
