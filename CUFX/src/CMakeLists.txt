@@ -40,6 +40,7 @@ endmacro(add_op_module)
 
 add_op_module(gemm)
 add_op_module(reductsum)  # 注册模块
+add_op_module(conv)  # 注册模块
 
 # 制作动态库
 set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/build/lib)

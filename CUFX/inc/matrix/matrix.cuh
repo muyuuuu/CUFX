@@ -5,6 +5,8 @@
 #include "data_type.cuh"
 #include "log.cuh"
 
+#include <stdexcept>
+
 class Matrix {
 public:
     // 尺寸信息
@@ -26,12 +28,18 @@ public:
     size_t size;
     bool is_matrix_valid;
 
+    // 用于卷积
+    int batch_size;
+    int h_stride;
+    int w_stride;
+
     // 禁用拷贝
     Matrix(const Matrix &) = delete;
     Matrix &operator=(const Matrix &) = delete;
 
     // 构造函数
-    Matrix(const ElemType &elem_type, const Shape &shape, const MemoryType &memory_type, const IsAsync &is_async);
+    Matrix(const ElemType &elem_type, const Shape &shape, const MemoryType &memory_type, const IsAsync &is_async,
+           const int _batch_size = 1, const int _h_stride = 1, const int _w_stride = 1);
 
     // 获取字节数
     template <typename T>
@@ -43,6 +51,10 @@ public:
     // 访问矩阵元素
     template <typename T>
     T &At(int h, int w, int c) {
+        if (h >= height && w >= width && c >= channel) {
+            LOGE("memory out of range ! %d %d %d %d\n", h, height, w, width);
+            throw std::out_of_range("memory out of range");
+        }
         CheckType<T>();
         T *data = reinterpret_cast<T *>(host_addr);
         return data[h * this->width * this->channel + this->channel * w + c];
@@ -50,12 +62,35 @@ public:
 
     template <typename T>
     const T &At(int h, int w, int c) const {
-        if (h >= height && w >= width) {
+        if (h >= height && w >= width && c >= channel) {
             LOGE("memory out of range ! %d %d %d %d\n", h, height, w, width);
+            throw std::out_of_range("memory out of range");
         }
         CheckType<T>();
         T *data = reinterpret_cast<T *>(host_addr);
         return data[h * this->width * this->channel + this->channel * w + c];
+    }
+
+    template <typename T>
+    T &At(int idx) {
+        if (idx >= batch_size * height * channel * width) {
+            LOGE("memory out of range ! %d\n", idx);
+            throw std::out_of_range("memory out of range");
+        }
+        CheckType<T>();
+        T *data = reinterpret_cast<T *>(host_addr);
+        return data[idx];
+    }
+
+    template <typename T>
+    const T &At(int idx) const {
+        if (idx >= batch_size * height * channel * width) {
+            LOGE("memory out of range ! %d\n", idx);
+            throw std::out_of_range("memory out of range");
+        }
+        CheckType<T>();
+        T *data = reinterpret_cast<T *>(host_addr);
+        return data[idx];
     }
 
     template <typename T>
