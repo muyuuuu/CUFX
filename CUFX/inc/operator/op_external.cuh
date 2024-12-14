@@ -9,4 +9,6 @@ cudaError_t ReductSum(const Matrix &src, void *val);
 
 cudaError_t Gemm(const Matrix &src1, const Matrix &src2, Matrix &dst);
 
+cudaError_t Conv(const Matrix &src1, const Matrix &src2, Matrix &dst);
+
 #endif

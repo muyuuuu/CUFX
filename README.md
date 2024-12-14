@@ -4,12 +4,14 @@
 
 想着在下班时间学点什么，刷视频打游戏总不是办法。有时候下班都 22 点甚至更晚，但还是要顶住，哪怕学 10 分钟呢？想来想去决定从 `cuda` 开始了，本系列计划由两部分组成：
 
-- 第一部分是 `cuda` 编程基础，持续更新
+- 第一部分是 `cuda` 编程基础
 - 第二部分是 `cuda` 优化模型
 
 不过搞完第一部分后我应该会去学 `C++`，把一切基础知识准备就绪后开始学习 `cuda` 优化模型。时隔两个月，我学完 `C++` 回来了。
 
 > [一份不错的 C++ 进阶文档](https://github.com/parallel101/cppguidebook)
+
+**下班后有点头晕眼花，但还是在艰难施工中**。 ~~也许哪天学到高大上的写法，比如一些好的日志实现，好的架构组织，我就回来填坑。~~ 如果你有想法，哪怕是练手，想练习一个内存池，也欢迎。
 
 ## `CudaBase`
 
@@ -41,18 +43,25 @@ make install
 
 ## `CUFX`
 
-`cuda` 计算框架 `CUFX`，取自单词 `Cuda Framework eXtended` 用来装逼。包含一些算子的实际项目，严格组织代码结构，TODO：
+`cuda` 计算框架 `CUFX`，取自单词 `Cuda Framework eXtended` 用来装逼。包含一些算子的实际项目，严格组织代码结构。大概计划是：
 
-- 线程池
-- 内存池
-- 一些优雅的 C++ 实现
-- 一些高性能 cuda 算子
-- 可对外提供动态库，直接使用
 
-**下班后有点头晕眼花，但还是在艰难施工中**。 ~~也许哪天学到高大上的写法，比如一些好的日志实现，好的架构组织，我就回来填坑。~~ 如果你有想法，哪怕是练手，想练习一个内存池，也欢迎。
+- [ ] 线程池
+- [ ] 内存池
+- [x] 基础日志、数据类型
+- [x] 一些优雅的 C++ 实现
+- [x] 一些高性能 cuda 算子
+- [x] 可对外提供动态库，直接使用
+- [x] 自动化测试框架
+
+| 文件        | 备注                                                     |
+| ----------- | -------------------------------------------------------- |
+| `reductsum` | `reduce` 优化，解决 bank conflict，交叉寻址，warp 展开等 |
+| `gemm`      | `gemm` 实践，共享内存、2d thread tile、双缓冲技术        |
+| `conv`      | 卷积实践，`img2col` 算法                                 |
 
 ## 参考
 
-1. 内存： https://www.cnblogs.com/moonzzz/p/17621574.html
-2. 多流： https://lulaoshi.info/gpu/python-cuda/streams.html
-3. 进阶，不适用初学者： https://github.com/PaddleJitLab/CUDATutorial/tree/develop
+1. [内存](https://www.cnblogs.com/moonzzz/p/17621574.html)
+2. [多流](https://lulaoshi.info/gpu/python-cuda/streams.html)
+3. [进阶，不适用初学者](https://github.com/PaddleJitLab/CUDATutorial/tree/develop)

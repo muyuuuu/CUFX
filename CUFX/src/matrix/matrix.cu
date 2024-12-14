@@ -1,6 +1,7 @@
 #include "matrix.cuh"
 
-Matrix::Matrix(const ElemType &elem_type, const Shape &shape, const MemoryType &memory_type, const IsAsync &is_async) {
+Matrix::Matrix(const ElemType &elem_type, const Shape &shape, const MemoryType &memory_type, const IsAsync &is_async,
+               const int _batch_size, const int _h_stride, const int _w_stride) {
     this->width = shape.width;
     this->height = shape.height;
     this->channel = shape.channel;
@@ -11,6 +12,11 @@ Matrix::Matrix(const ElemType &elem_type, const Shape &shape, const MemoryType &
     this->is_matrix_valid = false;
     this->memory_type = memory_type;
     this->size = this->width * this->height * this->channel;
+
+    // for conv
+    this->batch_size = _batch_size;
+    this->h_stride = _h_stride;
+    this->w_stride = _w_stride;
 }
 
 cudaError_t Matrix::MatrixCreate() {
