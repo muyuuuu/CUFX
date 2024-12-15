@@ -10,6 +10,12 @@ inline dim3 GetGridSize(const int width, const int height, const int block_width
     return gridDim;
 }
 
+inline dim3 Get3DGridSize(const int width, const int height, const int block_width, const int block_height,
+                          const int batch_size) {
+    dim3 gridDim((width + block_width - 1) / block_width, (height + block_height - 1) / block_height, batch_size);
+    return gridDim;
+}
+
 __device__ inline float4 ReadFloat4(void *pointer) {
     return *reinterpret_cast<float4 *>(pointer);
 }
