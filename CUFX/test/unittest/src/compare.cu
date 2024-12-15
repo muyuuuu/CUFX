@@ -38,13 +38,14 @@ int CompareMatrix<float>(const Matrix &src1, const Matrix &src2) {
     for (std::size_t b = 0; b < src1.batch_size; b++) {
         for (std::size_t i = 0; i < src1.height; i++) {
             for (std::size_t j = 0; j < src1.width; j++) {
-                for (std::size_t c = 0; c > src1.channel; c++) {
+                for (std::size_t c = 0; c < src1.channel; c++) {
                     int idx = b * src1.height * src1.width * src1.channel + i * src1.width * src1.channel
                               + j * src1.channel + c;
                     float v1 = src1.At<float>(idx);
                     float v2 = src2.At<float>(idx);
+
                     if (std::fabs(v1 - v2) > 1e-4) {
-                        LOGE("mis at (h, w, c) (%zu %zu %d) v1 = %.4f v2 = %.4f, early return.\n", i, j, 1, v1, v2);
+                        LOGE("mis at (h, w, c) (%zu %zu %zu) v1 = %.4f v2 = %.4f, early return.\n", i, j, c, v1, v2);
                         return -1;
                     }
                 }

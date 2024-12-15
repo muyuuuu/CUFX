@@ -63,8 +63,8 @@ int ConvCPU(const Matrix &src, const Matrix &kernel, Matrix &dst) {
 
 TestCase(CudaOp, ConvFloat) {
     const int batch_size = 2;
-    const int src_height = 100;
-    const int src_width = 100;
+    const int src_height = 130;
+    const int src_width = 514;
     const int src_channel = 12;
 
     const int kernel_channel = 24;
