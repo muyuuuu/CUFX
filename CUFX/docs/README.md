@@ -132,3 +132,24 @@ __global__ void GemmKernel(T *src1, T *src2, T *dst, std::size_t h, std::size_t 
 ### 双缓冲 (0.62 ms)
 
 没快多少
+
+# conv
+
+参数：
+
+```c
+const int batch_size = 2;
+const int src_height = 130;
+const int src_width = 514;
+const int src_channel = 12;
+
+const int kernel_channel = 24;
+const int kernel_height = 3;
+const int kernel_width = 3;
+const int h_stride = 1;
+const int w_stride = 1;
+```
+
+## 朴素实现 (1.2ms)
+
+## img2col + 隐 GEMM (0.6ms)

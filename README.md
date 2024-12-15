@@ -55,14 +55,15 @@ make install
 - [x] 可对外提供动态库，直接使用
 - [x] 自动化测试框架
 
-| 文件        | 备注                                                     |
-| ----------- | -------------------------------------------------------- |
-| `reductsum` | `reduce` 优化，解决 bank conflict，交叉寻址，warp 展开等 |
-| `gemm`      | `gemm` 实践，共享内存、2d thread tile、双缓冲技术        |
-| `conv`      | 卷积实践，`img2col` 算法                                 |
+| 文件        | 备注                                                         |
+| ----------- | ------------------------------------------------------------ |
+| `reductsum` | `reduce` 优化，解决 `bank conflict`，交叉寻址，`warp` 展开等 |
+| `gemm`      | `gemm` 实践，共享内存、`2d thread tile`、双缓冲技术          |
+| `conv`      | 卷积实践，`img2col` 与隐 `gemm` 算法                         |
 
-## 参考
+# 参考
 
-1. [内存](https://www.cnblogs.com/moonzzz/p/17621574.html)
-2. [多流](https://lulaoshi.info/gpu/python-cuda/streams.html)
-3. [进阶，不适用初学者](https://github.com/PaddleJitLab/CUDATutorial/tree/develop)
+1. [基础](https://github.com/sangyc10/CUDA-code)
+2. [内存](https://www.cnblogs.com/moonzzz/p/17621574.html)
+3. [多流](https://lulaoshi.info/gpu/python-cuda/streams.html)
+4. [进阶，不适用初学者](https://github.com/PaddleJitLab/CUDATutorial/tree/develop)
