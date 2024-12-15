@@ -65,9 +65,9 @@ TestCase(CudaOp, ConvFloat) {
     const int batch_size = 2;
     const int src_height = 100;
     const int src_width = 100;
-    const int src_channel = 3;
+    const int src_channel = 12;
 
-    const int kernel_channel = 5;
+    const int kernel_channel = 24;
     const int kernel_height = 3;
     const int kernel_width = 3;
     const int h_stride = 1;
@@ -108,17 +108,17 @@ TestCase(CudaOp, ConvFloat) {
     CUDA_CHECK_NO_RET(dst2.MatrixCreate());
 
     cudaError_t cuda_ret;
-    int c_ret;
+    int c_ret{-1};
 
-    // // cuda run
-    // {
-    //     cuda_ret = Gemm(src1, src2, dst1);
-    //     ASSERT_EQ(cuda_ret, 0);
-    // }
+    // cuda run
+    {
+        cuda_ret = Conv(src, kernel, dst1);
+        ASSERT_EQ(cuda_ret, 0);
+    }
 
     // C run
     {
-        ProfileTime time{"ConvCPU"};
+        ProfileTime time{"Conv"};
         time.StartCPUTime();
         c_ret = ConvCPU<float>(src, kernel, dst2);
         time.EndCPUTime();

@@ -45,7 +45,7 @@ public:
     template <typename T>
     size_t GetBytes() const {
         CheckType<T>();
-        return this->height * this->width * this->channel * sizeof(T);
+        return this->batch_size * this->height * this->width * this->channel * sizeof(T);
     }
 
     // 访问矩阵元素
